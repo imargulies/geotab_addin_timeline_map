@@ -1,0 +1,17 @@
+{
+    "name": "GPS Minute by Minute Tracking",
+    "supportEmail": "myname@mycompany.com",
+    "version": "1.0",
+    "items": [
+        {
+            "url": "timeline.html",
+            "path": "ActivityLink/",
+            "menuName": {
+                "en": "Minute by Minute GPS",
+                "fr": "GPS Minute par Minute"
+            },
+            "svgIcon": "https://www.geotab.com/geoimages/home/icon-solutions.svg"
+        }
+    ],
+    "isSigned": false
+}

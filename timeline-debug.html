@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minute-by-Minute Timeline - Debug</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="timeline.css" />
+</head>
+<body>
+    <div id="header">
+        <h1>📍 Minute-by-Minute Timeline Tracker</h1>
+    </div>
+
+    <div id="controls">
+        <div class="control-group">
+            <label for="vehicle-select">Vehicle</label>
+            <select id="vehicle-select">
+                <option value="">Select a vehicle...</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="minute-interval">Interval</label>
+            <select id="minute-interval">
+                <option value="1" selected>1 min</option>
+                <option value="2">2 min</option>
+                <option value="3">3 min</option>
+                <option value="4">4 min</option>
+                <option value="5">5 min</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="start-date">Start Date</label>
+            <input type="date" id="start-date">
+        </div>
+
+        <div class="control-group">
+            <label for="start-time">Start Time</label>
+            <input type="time" id="start-time">
+        </div>
+
+        <div class="control-group">
+            <label for="end-date">End Date</label>
+            <input type="date" id="end-date">
+        </div>
+
+        <div class="control-group">
+            <label for="end-time">End Time</label>
+            <input type="time" id="end-time">
+        </div>
+
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <button id="load-data">Load Timeline</button>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="left-panel">
+            <div id="timeline-header">
+                Timeline - <span id="point-count">0</span> points
+            </div>
+            <div id="timeline-list">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🕐</div>
+                    <div class="empty-state-text">Select date range to load timeline</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="right-panel">
+            <div id="map"></div>
+            <div id="map-info" style="display: none;">
+                <div class="map-info-title">Selected Minute</div>
+                <div class="map-info-detail">
+                    <span id="info-time">--</span>
+                </div>
+                <div class="map-info-detail">
+                    <span class="map-info-label">Location:</span>
+                </div>
+                <div class="map-info-detail map-info-address">
+                    <span id="info-coords">--</span>
+                </div>
+            </div>
+            <div id="loading">
+                <div class="spinner"></div>
+                <div>Loading data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // Check if Leaflet loaded
+        console.log('Leaflet loaded:', typeof L !== 'undefined');
+        
+        // Check if geotab object exists
+        console.log('Geotab object:', typeof geotab !== 'undefined');
+        
+        if (typeof geotab === 'undefined') {
+            console.error('ERROR: geotab object not found! This add-in must be run inside MyGeotab.');
+        }
+    </script>
+    <script src="timeline.js"></script>
+</body>
+</html>
