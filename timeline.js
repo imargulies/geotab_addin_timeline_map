@@ -153,10 +153,7 @@ function formatDate(date) {
 function formatTime(date) {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
 
-// Setup event listeners
 function setupEventListeners() {
     document.getElementById('load-data').addEventListener('click', loadTimelineData);
     
@@ -188,7 +185,7 @@ function validateTimeRange() {
             document.getElementById('start-date').value = formatDate(newStartDateTime);
             document.getElementById('start-time').value = formatTime(newStartDateTime);
             
-            alert('Time range limited to 1 hour maximum. Start time adjusted automatically.');
+            showNotification('Time range limited to 1 hour maximum. Start time adjusted automatically.', 'info');
         } else if (hoursDiff < 0) {
             // End is before start, swap them
             document.getElementById('end-date').value = formatDate(startDateTime);
@@ -330,19 +327,74 @@ Please check:
 Technical details:
 ${error.stack || 'No stack trace available'}`;
         
+        alert(errorDetails);
+    }
+}
 
+// Get user's unit preference from Geotab settings - FIXED FOR YOUR USER
+async function getUserUnitPreference() {
+    try {
+        console.log('=== Starting getUserUnitPreference ===');
+        
+        const users = await api.call('Get', {
+            typeName: 'User',
+            search: {
+                name: 'israel.margulies@highpointgps.com'  // YOUR NAME
+            }
+        });
+        
+        if (!users || users.length === 0) {
+            console.log('No users found, returning km');
+            return 'km';
+        }
+        
+        const currentUser = users[0];
+        console.log('Current user:', currentUser.name);
+        
+        const isMetric = currentUser.isMetric;
+        console.log('isMetric:', isMetric);
+        
+        if (isMetric === false) {
+            console.log('✅ User is Imperial → MILES');
+            return 'miles';
+        } 
+        else if (isMetric === true) {
+            console.log('✅ User is Metric → KM');
+            return 'km';
+        }
+        
+        return 'km';
+        
+    } catch (error) {
+        console.error('ERROR:', error);
+        return 'km';
+    }
+}
+
+// Convert speed based on user's unit preference
+function formatSpeed(speedKmh) {
+    if (unitPreference === 'miles') {
+        // Convert km/h to mph (divide by 1.609)
+        return Math.round(speedKmh / 1.609);
+    }
+    return Math.round(speedKmh);
+}
+
+// Load timeline data from Geotab
+async function loadTimelineData() {
+    const vehicleId = document.getElementById('vehicle-select').value;
     const startDate = document.getElementById('start-date').value;
     const startTime = document.getElementById('start-time').value;
     const endDate = document.getElementById('end-date').value;
     const endTime = document.getElementById('end-time').value;
 
     if (!vehicleId) {
-        alert('Please select a vehicle');
+        showNotification('Please select a vehicle', 'warning');
         return;
     }
 
     if (!startDate || !startTime || !endDate || !endTime) {
-        alert('Please select date and time range');
+        showNotification('Please select date and time range', 'warning');
         return;
     }
 
@@ -375,9 +427,11 @@ ${error.stack || 'No stack trace available'}`;
             const unit = await getUserUnitPreference();
             unitPreference = unit;
             console.log('Unit preference set to:', unitPreference);
+            alert('Unit preference determined: ' + unitPreference);
         } catch (err) {
             console.error('Error getting unit preference:', err);
             unitPreference = 'km';
+            alert('Error getting preference, defaulting to km');
         }
 
         if (!records || records.length === 0) {
@@ -440,7 +494,7 @@ ${error.stack || 'No stack trace available'}`;
     } catch (error) {
         console.error('Error loading timeline data:', error);
         document.getElementById('loading').style.display = 'none';
-        alert('Error loading data: ' + error.message);
+        showNotification('Error loading data: ' + error.message, 'error');
     }
 }
 
@@ -832,7 +886,6 @@ function selectMinute(index) {
     // Update or create start marker (green)
     if (startMarker) {
         startMarker.setLatLng([startPoint.latitude, startPoint.longitude]);
-        if (startMarker.closePopup) startMarker.closePopup();
     } else {
         // Create new marker
         startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
@@ -842,17 +895,12 @@ function selectMinute(index) {
             weight: 2,
             opacity: 1,
             fillOpacity: 0.9
-        });
-        startMarker.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-        });
-        startMarker.addTo(map);
+        }).addTo(map);
     }
     
     // Update or create end marker (red)
     if (endMarker) {
         endMarker.setLatLng([endPoint.latitude, endPoint.longitude]);
-        if (endMarker.closePopup) endMarker.closePopup();
     } else {
         // Create new marker
         endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
@@ -862,11 +910,7 @@ function selectMinute(index) {
             weight: 2,
             opacity: 1,
             fillOpacity: 0.9
-        });
-        endMarker.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-        });
-        endMarker.addTo(map);
+        }).addTo(map);
     }
     
     // Remove the vehicle marker (no longer needed)
@@ -922,6 +966,6 @@ function selectMinute(index) {
     const bounds = L.latLngBounds([startPoint.latitude, startPoint.longitude], [endPoint.latitude, endPoint.longitude]);
     map.fitBounds(bounds, { padding: [50, 50] });
 
-    // Hide the info panel
+    // Hide the info panel since we're using popups on markers
     document.getElementById('map-info').style.display = 'none';
 }
