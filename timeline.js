@@ -4,6 +4,7 @@ let locationData = [];
 let selectedIndex = null;
 let api; // Geotab API
 let state; // Geotab state
+let unitPreference = 'km'; // User's unit preference: 'km' or 'miles'
 
 // Geotab add-in entry point - REQUIRED for Geotab add-ins
 geotab.addin.gpsMinuteByMinute = function() {
@@ -67,6 +68,17 @@ geotab.addin.gpsMinuteByMinute = function() {
                     })
                     .catch(err => {
                         console.error('Error loading devices during initialize:', err);
+                    });
+                
+                // Get user's unit preference
+                getUserUnitPreference()
+                    .then(unit => {
+                        unitPreference = unit;
+                        console.log('User unit preference set to:', unitPreference);
+                    })
+                    .catch(err => {
+                        console.error('Error getting user unit preference:', err);
+                        unitPreference = 'km'; // fallback to km
                     });
                 
                 console.log('=== GPS Minute by Minute Add-in Initialize END ===');
@@ -331,6 +343,49 @@ ${error.stack || 'No stack trace available'}`;
         
         alert(errorDetails);
     }
+}
+
+// Get user's unit preference from Geotab settings
+async function getUserUnitPreference() {
+    try {
+        // Get current user from state
+        const currentUser = state.getUser();
+        if (!currentUser || !currentUser.id) {
+            console.warn('Unable to get current user');
+            return 'km'; // default to km
+        }
+        
+        // Get user object with preferences
+        const users = await api.call('Get', {
+            typeName: 'User',
+            search: {
+                id: currentUser.id
+            }
+        });
+        
+        if (users && users.length > 0) {
+            const user = users[0];
+            console.log('User settings retrieved:', user);
+            // Check user's unit of measure preference
+            // unitOfMeasure: 'km' or 'miles'
+            const unit = user.unitOfMeasure === 'miles' ? 'miles' : 'km';
+            console.log('User unit preference:', unit);
+            return unit;
+        }
+        return 'km'; // default to km
+    } catch (error) {
+        console.error('Error getting user unit preference:', error);
+        return 'km'; // default to km on error
+    }
+}
+
+// Convert speed based on user's unit preference
+function formatSpeed(speedKmh) {
+    if (unitPreference === 'miles') {
+        // Convert km/h to mph (divide by 1.609)
+        return Math.round(speedKmh / 1.609);
+    }
+    return Math.round(speedKmh);
 }
 
 // Load timeline data from Geotab
@@ -702,7 +757,7 @@ function addTimelineItem(point, index) {
             </div>
         </div>
         <div class="timeline-speed">
-            <span class="speed-badge">${Math.round(speedKmh)} km/h</span>
+            <span class="speed-badge">${formatSpeed(speedKmh)} ${unitPreference === 'miles' ? 'mph' : 'km/h'}</span>
             <span class="status-badge ${status.class}">${status.text}</span>
         </div>
     `;
@@ -739,7 +794,7 @@ function updateTimelineItem(index) {
             <div class="timeline-time">${timeStr}</div>
             <div class="timeline-address">${addressText}</div>
             <div class="timeline-speed">
-                <span class="speed-badge">${Math.round(speedKmh)} km/h</span>
+                <span class="speed-badge">${formatSpeed(speedKmh)} ${unitPreference === 'miles' ? 'mph' : 'km/h'}</span>
                 <span class="status-badge ${status.class}">${status.text}</span>
             </div>
         `;
