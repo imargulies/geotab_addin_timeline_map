@@ -70,17 +70,6 @@ geotab.addin.gpsMinuteByMinute = function() {
                         console.error('Error loading devices during initialize:', err);
                     });
                 
-                // Get user's unit preference
-                getUserUnitPreference()
-                    .then(unit => {
-                        unitPreference = unit;
-                        console.log('User unit preference set to:', unitPreference);
-                    })
-                    .catch(err => {
-                        console.error('Error getting user unit preference:', err);
-                        unitPreference = 'km'; // fallback to km
-                    });
-                
                 console.log('=== GPS Minute by Minute Add-in Initialize END ===');
                 callback();
             } catch (error) {
