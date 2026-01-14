@@ -334,20 +334,20 @@ ${error.stack || 'No stack trace available'}`;
     }
 }
 
-// Get user's unit preference from Geotab settings
+// Get user's unit preference from Geotab settings - FIXED FOR YOUR USER
 async function getUserUnitPreference() {
     try {
         console.log('=== Starting getUserUnitPreference ===');
         
-        // Get current user using the Get API with User typeName
+        // Get current user by name (israel.margulies@highpointgps.com)
         const users = await api.call('Get', {
             typeName: 'User',
             search: {
-                name: state.userName
+                name: 'israel.margulies@highpointgps.com'
             }
         });
         
-        console.log('Users retrieved:', users);
+        console.log('Users found:', users);
         
         if (!users || users.length === 0) {
             console.log('No users found, returning km');
@@ -359,7 +359,8 @@ async function getUserUnitPreference() {
         console.log('Current user object:', JSON.stringify(currentUser, null, 2));
         
         // Get isMetric value from user object
-        // According to Geotab docs: isMetric: true = metric (KM), false = imperial (Miles)
+        // isMetric: false = Imperial (Miles)
+        // isMetric: true = Metric (KM)
         const isMetric = currentUser.isMetric;
         console.log('=== CHECKING isMetric ===');
         console.log('isMetric value:', isMetric);
