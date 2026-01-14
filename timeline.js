@@ -350,43 +350,29 @@ async function getUserUnitPreference() {
     try {
         console.log('=== Starting getUserUnitPreference ===');
         
-        // Get current user
-        const currentUser = state.getUser();
-        console.log('Current user:', currentUser);
+        // Get current user using API call (GetCurrentUser)
+        const currentUser = await api.call('GetCurrentUser');
+        console.log('Current user from API:', currentUser);
         
         if (!currentUser || !currentUser.id) {
             console.log('No user ID found, returning km');
             return 'km';
         }
         
-        console.log('Getting user ID:', currentUser.id);
+        console.log('Got user ID:', currentUser.id);
         
-        // Fetch user data from API
-        const users = await api.call('Get', {
-            typeName: 'User',
-            search: { id: currentUser.id }
-        });
-        
-        console.log('Users from API:', JSON.stringify(users, null, 2));
-        
-        if (!users || users.length === 0) {
-            console.log('No user data returned');
-            return 'km';
-        }
-        
-        const user = users[0];
-        console.log('===== USER OBJECT =====');
-        console.log(JSON.stringify(user, null, 2));
-        console.log('===== END USER OBJECT =====');
+        // Use the current user object directly - it should already have isMetric
+        console.log('Current user object:');
+        console.log(JSON.stringify(currentUser, null, 2));
         
         // Check isMetric property (from Geotab API docs)
         // isMetric: true = metric (KM), false = imperial (Miles)
-        console.log('isMetric value:', user.isMetric);
+        console.log('isMetric value:', currentUser.isMetric);
         
-        if (user.isMetric === true) {
+        if (currentUser.isMetric === true) {
             console.log('User is using metric system, returning km');
             return 'km';
-        } else if (user.isMetric === false) {
+        } else if (currentUser.isMetric === false) {
             console.log('User is using imperial system, returning miles');
             return 'miles';
         }
@@ -397,6 +383,7 @@ async function getUserUnitPreference() {
         
     } catch (error) {
         console.error('ERROR in getUserUnitPreference:', error);
+        console.error('Error message:', error.message);
         return 'km'; // default to km on error
     }
 }
