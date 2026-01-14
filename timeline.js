@@ -1,4 +1,4 @@
-// Global state
+// Global state 
 let map, vehicleMarker, pathPolyline, routingControl, startMarker, endMarker, arrowDecorator;
 let locationData = [];
 let selectedIndex = null;
