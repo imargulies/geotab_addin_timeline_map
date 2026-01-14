@@ -334,10 +334,58 @@ ${error.stack || 'No stack trace available'}`;
     }
 }
 
+// Get user's unit preference from Geotab settings
+async function getUserUnitPreference() {
+    try {
+        console.log('=== Starting getUserUnitPreference ===');
+        
+        // Get current user from state
+        const currentUser = state.getCurrentUser();
+        console.log('Current user object:', currentUser);
+        
+        if (!currentUser) {
+            console.log('No current user, returning km');
+            return 'km';
+        }
+        
+        console.log('Current user name:', currentUser.name);
+        console.log('Current user email:', currentUser.email);
+        console.log('Current user ID:', currentUser.id);
+        
+        const isMetric = currentUser.isMetric;
+        console.log('isMetric value:', isMetric);
+        console.log('isMetric type:', typeof isMetric);
+        
+        if (isMetric === false) {
+            console.log('✅ User: ' + currentUser.name + ' (' + currentUser.email + ') is Imperial → MILES');
+            return 'miles';
+        } 
+        else if (isMetric === true) {
+            console.log('✅ User: ' + currentUser.name + ' (' + currentUser.email + ') is Metric → KM');
+            return 'km';
+        }
+        
+        console.log('isMetric is undefined, defaulting to km');
+        return 'km';
+        
+    } catch (error) {
+        console.error('ERROR in getUserUnitPreference:', error);
+        console.error('Error details:', error.message);
+        return 'km';
+    }
+}
 
+// Convert speed based on user's unit preference
+function formatSpeed(speedKmh) {
+    if (unitPreference === 'miles') {
+        // Convert km/h to mph (divide by 1.609)
+        return Math.round(speedKmh / 1.609);
+    }
+    return Math.round(speedKmh);
+}
 
-
-
+// Load timeline data from Geotab
+async function loadTimelineData() {
     const vehicleId = document.getElementById('vehicle-select').value;
     const startDate = document.getElementById('start-date').value;
     const startTime = document.getElementById('start-time').value;
@@ -378,7 +426,15 @@ ${error.stack || 'No stack trace available'}`;
 
         console.log(`Loaded ${records.length} log records`);
         
-
+        // Get user's unit preference from Geotab
+        try {
+            const unit = await getUserUnitPreference();
+            unitPreference = unit;
+            console.log('Unit preference set to:', unitPreference);
+        } catch (err) {
+            console.error('Error getting unit preference:', err);
+            unitPreference = 'km';
+        }
 
         if (!records || records.length === 0) {
             document.getElementById('loading').style.display = 'none';
@@ -829,7 +885,45 @@ function selectMinute(index) {
     // End marker at end of interval
     const endPoint = locationData[segmentEnd];
     
-
+    // Update or create start marker (green)
+    if (startMarker) {
+        startMarker.setLatLng([startPoint.latitude, startPoint.longitude]);
+        if (startMarker.closePopup) startMarker.closePopup();
+    } else {
+        // Create new marker
+        startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
+            radius: 8,
+            fillColor: "#27ae60",
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        });
+        startMarker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+        });
+        startMarker.addTo(map);
+    }
+    
+    // Update or create end marker (red)
+    if (endMarker) {
+        endMarker.setLatLng([endPoint.latitude, endPoint.longitude]);
+        if (endMarker.closePopup) endMarker.closePopup();
+    } else {
+        // Create new marker
+        endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
+            radius: 8,
+            fillColor: "#e74c3c",
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        });
+        endMarker.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+        });
+        endMarker.addTo(map);
+    }
     
     // Remove the vehicle marker (no longer needed)
     if (vehicleMarker) {
@@ -884,5 +978,6 @@ function selectMinute(index) {
     const bounds = L.latLngBounds([startPoint.latitude, startPoint.longitude], [endPoint.latitude, endPoint.longitude]);
     map.fitBounds(bounds, { padding: [50, 50] });
 
-
+    // Hide the info panel
+    document.getElementById('map-info').style.display = 'none';
 }
