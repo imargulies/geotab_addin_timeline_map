@@ -339,49 +339,47 @@ async function getUserUnitPreference() {
     try {
         console.log('=== Starting getUserUnitPreference ===');
         
-        // Get current user using API call (GetCurrentUser)
-        const currentUser = await api.call('GetCurrentUser');
-        console.log('Current user from API:', currentUser);
+        // Get current user using the Get API with User typeName
+        const users = await api.call('Get', {
+            typeName: 'User',
+            search: {
+                name: state.userName
+            }
+        });
         
-        if (!currentUser || !currentUser.id) {
-            console.log('No user ID found, returning km');
+        console.log('Users retrieved:', users);
+        
+        if (!users || users.length === 0) {
+            console.log('No users found, returning km');
             return 'km';
         }
         
-        console.log('Got user ID:', currentUser.id);
+        const currentUser = users[0];
+        console.log('Current user:', currentUser.name);
+        console.log('Current user object:', JSON.stringify(currentUser, null, 2));
         
-        // Use the current user object directly - it should already have isMetric
-        console.log('Current user object:');
-        console.log(JSON.stringify(currentUser, null, 2));
-        
-        // Get isMetric value - CRITICAL FIX
+        // Get isMetric value from user object
         // According to Geotab docs: isMetric: true = metric (KM), false = imperial (Miles)
         const isMetric = currentUser.isMetric;
-        console.log('=== CRITICAL: Checking isMetric ===');
-        console.log('isMetric raw value:', isMetric);
+        console.log('=== CHECKING isMetric ===');
+        console.log('isMetric value:', isMetric);
         console.log('isMetric type:', typeof isMetric);
+        console.log('isMetric === false:', isMetric === false);
+        console.log('isMetric === true:', isMetric === true);
         
-        // IMPORTANT: Check the INVERSE
-        // If user has US/Imperial setting, isMetric will be FALSE
-        // If user has Metric setting, isMetric will be TRUE
-        
+        // Check if user is using US/Imperial (isMetric = false = miles)
         if (isMetric === false) {
-            console.log('✅ SUCCESS: isMetric is FALSE = User prefers MILES (US/Imperial)');
+            console.log('✅ User is US/Imperial → MILES');
             return 'miles';
-        } else if (isMetric === true) {
-            console.log('✅ SUCCESS: isMetric is TRUE = User prefers KM (Metric)');
-            return 'km';
-        } else if (isMetric == false) {
-            console.log('✅ SUCCESS: isMetric == FALSE (loose) = User prefers MILES');
-            return 'miles';
-        } else if (isMetric == true) {
-            console.log('✅ SUCCESS: isMetric == TRUE (loose) = User prefers KM');
+        } 
+        // Check if user is using Metric (isMetric = true = km)
+        else if (isMetric === true) {
+            console.log('✅ User is Metric → KM');
             return 'km';
         }
         
-        // If we get here, isMetric has an unexpected value
-        console.log('❌ WARNING: isMetric has unexpected value, defaulting to km');
-        console.log('Actual value:', JSON.stringify(isMetric));
+        // Default fallback
+        console.log('⚠️ Could not determine unit, defaulting to km');
         return 'km';
         
     } catch (error) {
