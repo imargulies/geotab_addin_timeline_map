@@ -348,52 +348,73 @@ ${error.stack || 'No stack trace available'}`;
 // Get user's unit preference from Geotab settings
 async function getUserUnitPreference() {
     try {
-        // Get current user from state
-        const currentUser = state.getUser();
-        console.log('Current user object:', currentUser);
+        console.log('=== getUserUnitPreference START ===');
         
-        if (!currentUser || !currentUser.id) {
-            console.warn('Unable to get current user');
-            return 'km'; // default to km
+        // Method 1: Try to get current user from state
+        let userId = null;
+        try {
+            const currentUser = state.getUser();
+            console.log('Current user from state:', currentUser);
+            if (currentUser && currentUser.id) {
+                userId = currentUser.id;
+            }
+        } catch (e) {
+            console.warn('Could not get user from state:', e);
         }
         
-        // Get user object with preferences
-        const users = await api.call('Get', {
-            typeName: 'User',
-            search: {
-                id: currentUser.id
+        // If we have a user ID, fetch their settings
+        if (userId) {
+            console.log('Fetching user settings for ID:', userId);
+            const users = await api.call('Get', {
+                typeName: 'User',
+                search: {
+                    id: userId
+                }
+            });
+            
+            console.log('Users response:', users);
+            
+            if (users && users.length > 0) {
+                const user = users[0];
+                console.log('Full user object:', JSON.stringify(user, null, 2));
+                console.log('User object keys:', Object.keys(user));
+                
+                // Log all relevant properties
+                console.log('unitOfMeasure:', user.unitOfMeasure);
+                console.log('distanceUnit:', user.distanceUnit);
+                console.log('isMetric:', user.isMetric);
+                console.log('countryCode:', user.countryCode);
+                
+                // Check multiple possible property names for unit preference
+                let unit = 'km'; // default
+                
+                if (user.unitOfMeasure === 'miles') {
+                    unit = 'miles';
+                    console.log('Detected miles from unitOfMeasure');
+                } else if (user.distanceUnit === 'miles') {
+                    unit = 'miles';
+                    console.log('Detected miles from distanceUnit');
+                } else if (user.isMetric === false) {
+                    unit = 'miles';
+                    console.log('Detected miles from isMetric=false');
+                } else if (user.isMetric === true) {
+                    unit = 'km';
+                    console.log('Detected km from isMetric=true');
+                }
+                
+                console.log('Final detected unit:', unit);
+                return unit;
             }
-        });
-        
-        console.log('Full user object from API:', users);
-        
-        if (users && users.length > 0) {
-            const user = users[0];
-            console.log('User object keys:', Object.keys(user));
-            console.log('Full user settings retrieved:', JSON.stringify(user, null, 2));
-            
-            // Check multiple possible property names for unit preference
-            let unit = 'km'; // default
-            
-            // Try different property names that Geotab might use
-            if (user.unitOfMeasure === 'miles' || user.distanceUnit === 'miles') {
-                unit = 'miles';
-            } else if (user.unitOfMeasure === 'km' || user.distanceUnit === 'km') {
-                unit = 'km';
-            } else if (user.isMetric === false) {
-                unit = 'miles';
-            } else if (user.isMetric === true) {
-                unit = 'km';
-            }
-            
-            console.log('Detected unit preference:', unit);
-            return unit;
         }
-        return 'km'; // default to km
+        
+        console.warn('Could not determine user settings, using default km');
+        return 'km';
+        
     } catch (error) {
-        console.error('Error getting user unit preference:', error);
+        console.error('ERROR in getUserUnitPreference:', error);
         console.error('Error details:', error.message);
-        return 'km'; // default to km on error
+        console.error('Error stack:', error.stack);
+        return 'km';
     }
 }
 
@@ -447,6 +468,11 @@ async function loadTimelineData() {
         });
 
         console.log(`Loaded ${records.length} log records`);
+
+        // Get user's unit preference before displaying data
+        const unit = await getUserUnitPreference();
+        unitPreference = unit;
+        console.log('Unit preference set to:', unitPreference);
 
         if (!records || records.length === 0) {
             document.getElementById('loading').style.display = 'none';
