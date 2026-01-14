@@ -425,17 +425,7 @@ async function loadTimelineData() {
 
         console.log(`Loaded ${records.length} log records`);
         
-        // Get user's unit preference from Geotab
-        try {
-            const unit = await getUserUnitPreference();
-            unitPreference = unit;
-            console.log('Unit preference set to:', unitPreference);
-            alert('Unit preference determined: ' + unitPreference);
-        } catch (err) {
-            console.error('Error getting unit preference:', err);
-            unitPreference = 'km';
-            alert('Error getting preference, defaulting to km');
-        }
+
 
         if (!records || records.length === 0) {
             document.getElementById('loading').style.display = 'none';
