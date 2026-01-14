@@ -348,72 +348,49 @@ ${error.stack || 'No stack trace available'}`;
 // Get user's unit preference from Geotab settings
 async function getUserUnitPreference() {
     try {
-        console.log('=== getUserUnitPreference START ===');
+        console.log('=== Starting getUserUnitPreference ===');
         
-        // Method 1: Try to get current user from state
-        let userId = null;
-        try {
-            const currentUser = state.getUser();
-            console.log('Current user from state:', currentUser);
-            if (currentUser && currentUser.id) {
-                userId = currentUser.id;
-            }
-        } catch (e) {
-            console.warn('Could not get user from state:', e);
+        // Get current user
+        const currentUser = state.getUser();
+        console.log('Current user:', currentUser);
+        
+        if (!currentUser || !currentUser.id) {
+            console.log('No user ID found, returning km');
+            return 'km';
         }
         
-        // If we have a user ID, fetch their settings
-        if (userId) {
-            console.log('Fetching user settings for ID:', userId);
-            const users = await api.call('Get', {
-                typeName: 'User',
-                search: {
-                    id: userId
-                }
-            });
-            
-            console.log('Users response:', users);
-            
-            if (users && users.length > 0) {
-                const user = users[0];
-                console.log('Full user object:', JSON.stringify(user, null, 2));
-                console.log('User object keys:', Object.keys(user));
-                
-                // Log all relevant properties
-                console.log('unitOfMeasure:', user.unitOfMeasure);
-                console.log('distanceUnit:', user.distanceUnit);
-                console.log('isMetric:', user.isMetric);
-                console.log('countryCode:', user.countryCode);
-                
-                // Check multiple possible property names for unit preference
-                let unit = 'km'; // default
-                
-                if (user.unitOfMeasure === 'miles') {
-                    unit = 'miles';
-                    console.log('Detected miles from unitOfMeasure');
-                } else if (user.distanceUnit === 'miles') {
-                    unit = 'miles';
-                    console.log('Detected miles from distanceUnit');
-                } else if (user.isMetric === false) {
-                    unit = 'miles';
-                    console.log('Detected miles from isMetric=false');
-                } else if (user.isMetric === true) {
-                    unit = 'km';
-                    console.log('Detected km from isMetric=true');
-                }
-                
-                console.log('Final detected unit:', unit);
-                return unit;
-            }
+        console.log('Getting user ID:', currentUser.id);
+        
+        // Fetch user data from API
+        const users = await api.call('Get', {
+            typeName: 'User',
+            search: { id: currentUser.id }
+        });
+        
+        console.log('Users from API:', JSON.stringify(users, null, 2));
+        
+        if (!users || users.length === 0) {
+            console.log('No user data returned');
+            return 'km';
         }
         
-        console.warn('Could not determine user settings, using default km');
+        const user = users[0];
+        console.log('User object all properties:');
+        Object.keys(user).forEach(key => {
+            console.log(`  ${key}: ${user[key]}`);
+        });
+        
+        // Check for miles preference
+        if (user.isMetric === false) {
+            console.log('User setting isMetric=false, returning miles');
+            return 'miles';
+        }
+        
+        console.log('No miles preference found, returning km');
         return 'km';
         
     } catch (error) {
         console.error('ERROR in getUserUnitPreference:', error);
-        console.error('Error details:', error.message);
-        console.error('Error stack:', error.stack);
         return 'km';
     }
 }
