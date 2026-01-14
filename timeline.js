@@ -330,10 +330,7 @@ Please check:
 Technical details:
 ${error.stack || 'No stack trace available'}`;
         
-        alert(errorDetails);
-    }
 
-    const vehicleId = document.getElementById('vehicle-select').value;
     const startDate = document.getElementById('start-date').value;
     const startTime = document.getElementById('start-time').value;
     const endDate = document.getElementById('end-date').value;
