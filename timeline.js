@@ -446,10 +446,10 @@ async function loadTimelineData() {
 
         console.log(`Loaded ${records.length} log records`);
         
-        // TEMPORARY TEST: Force miles to verify display works
-        console.log('TEST: Setting unit preference to miles');
+        // TEMPORARY TEST: Show alert to verify code is executing
+        alert('Code is running! About to set miles');
         unitPreference = 'miles';
-        console.log('TEST: Unit preference is now:', unitPreference);
+        alert('Unit preference set to: ' + unitPreference);
 
         if (!records || records.length === 0) {
             document.getElementById('loading').style.display = 'none';
