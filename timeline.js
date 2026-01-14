@@ -354,20 +354,34 @@ async function getUserUnitPreference() {
         console.log('Current user object:');
         console.log(JSON.stringify(currentUser, null, 2));
         
-        // Check isMetric property (from Geotab API docs)
-        // isMetric: true = metric (KM), false = imperial (Miles)
-        console.log('isMetric value:', currentUser.isMetric);
+        // Get isMetric value - CRITICAL FIX
+        // According to Geotab docs: isMetric: true = metric (KM), false = imperial (Miles)
+        const isMetric = currentUser.isMetric;
+        console.log('=== CRITICAL: Checking isMetric ===');
+        console.log('isMetric raw value:', isMetric);
+        console.log('isMetric type:', typeof isMetric);
         
-        if (currentUser.isMetric === true) {
-            console.log('User is using metric system, returning km');
-            return 'km';
-        } else if (currentUser.isMetric === false) {
-            console.log('User is using imperial system, returning miles');
+        // IMPORTANT: Check the INVERSE
+        // If user has US/Imperial setting, isMetric will be FALSE
+        // If user has Metric setting, isMetric will be TRUE
+        
+        if (isMetric === false) {
+            console.log('✅ SUCCESS: isMetric is FALSE = User prefers MILES (US/Imperial)');
             return 'miles';
+        } else if (isMetric === true) {
+            console.log('✅ SUCCESS: isMetric is TRUE = User prefers KM (Metric)');
+            return 'km';
+        } else if (isMetric == false) {
+            console.log('✅ SUCCESS: isMetric == FALSE (loose) = User prefers MILES');
+            return 'miles';
+        } else if (isMetric == true) {
+            console.log('✅ SUCCESS: isMetric == TRUE (loose) = User prefers KM');
+            return 'km';
         }
         
-        // Default to km if isMetric is not set
-        console.log('isMetric not found, defaulting to km');
+        // If we get here, isMetric has an unexpected value
+        console.log('❌ WARNING: isMetric has unexpected value, defaulting to km');
+        console.log('Actual value:', JSON.stringify(isMetric));
         return 'km';
         
     } catch (error) {
