@@ -149,12 +149,7 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Format time for time input (HH:MM)
-function formatTime(date) {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
 
-function setupEventListeners() {
     document.getElementById('load-data').addEventListener('click', loadTimelineData);
     
     // Auto-update end time when start date/time changes
@@ -329,13 +324,7 @@ ${error.stack || 'No stack trace available'}`;
         
         alert(errorDetails);
     }
-}
 
-// Get user's unit preference from Geotab settings - FIXED FOR YOUR USER
-
-
-// Convert speed based on user's unit preference
-function formatSpeed(speedKmh) {
     if (unitPreference === 'miles') {
         // Convert km/h to mph (divide by 1.609)
         return Math.round(speedKmh / 1.609);
@@ -390,11 +379,11 @@ async function loadTimelineData() {
             const unit = await getUserUnitPreference();
             unitPreference = unit;
             console.log('Unit preference set to:', unitPreference);
-            alert('Unit preference determined: ' + unitPreference);
+            
         } catch (err) {
             console.error('Error getting unit preference:', err);
             unitPreference = 'km';
-            alert('Error getting preference, defaulting to km');
+            
         }
 
         if (!records || records.length === 0) {
