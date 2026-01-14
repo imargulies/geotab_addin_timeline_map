@@ -375,28 +375,36 @@ async function getUserUnitPreference() {
         }
         
         const user = users[0];
-        console.log('User object all properties:');
-        Object.keys(user).forEach(key => {
-            console.log(`  ${key}: ${user[key]}`);
-        });
+        console.log('===== FULL USER OBJECT =====');
+        console.log(JSON.stringify(user, null, 2));
+        console.log('===== END USER OBJECT =====');
         
-        // Show what we're checking
-        console.log('Checking isMetric property:', user.isMetric);
-        alert('User isMetric setting: ' + user.isMetric);
+        // Try multiple possible property names
+        console.log('Checking properties:');
+        console.log('  isMetric:', user.isMetric);
+        console.log('  unitOfMeasure:', user.unitOfMeasure);
+        console.log('  distanceUnit:', user.distanceUnit);
+        console.log('  measurementSystem:', user.measurementSystem);
+        console.log('  distanceMeasure:', user.distanceMeasure);
         
-        // Check for miles preference
+        alert('Full user object logged to console. Check console for details.');
+        
+        // Check isMetric first
         if (user.isMetric === false) {
-            console.log('User setting isMetric=false, returning miles');
-            alert('Returning MILES because isMetric=false');
+            console.log('Result: isMetric=false, returning MILES');
             return 'miles';
         } else if (user.isMetric === true) {
-            console.log('User setting isMetric=true, returning km');
-            alert('Returning KM because isMetric=true');
+            console.log('Result: isMetric=true, returning KM');
             return 'km';
         }
         
-        console.log('No isMetric setting found, returning km');
-        alert('No isMetric found, defaulting to KM');
+        // Check unitOfMeasure
+        if (user.unitOfMeasure === 'miles') {
+            console.log('Result: unitOfMeasure=miles, returning MILES');
+            return 'miles';
+        }
+        
+        console.log('No preference found, defaulting to KM');
         return 'km';
         
     } catch (error) {
