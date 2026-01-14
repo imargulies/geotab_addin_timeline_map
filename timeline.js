@@ -339,15 +339,12 @@ async function getUserUnitPreference() {
     try {
         console.log('=== Starting getUserUnitPreference ===');
         
-        // Get current user by name (israel.margulies@highpointgps.com)
         const users = await api.call('Get', {
             typeName: 'User',
             search: {
-                name: 'israel.margulies@highpointgps.com'
+                name: 'israel.margulies@highpointgps.com'  // YOUR NAME
             }
         });
-        
-        console.log('Users found:', users);
         
         if (!users || users.length === 0) {
             console.log('No users found, returning km');
@@ -356,37 +353,24 @@ async function getUserUnitPreference() {
         
         const currentUser = users[0];
         console.log('Current user:', currentUser.name);
-        console.log('Current user object:', JSON.stringify(currentUser, null, 2));
         
-        // Get isMetric value from user object
-        // isMetric: false = Imperial (Miles)
-        // isMetric: true = Metric (KM)
         const isMetric = currentUser.isMetric;
-        console.log('=== CHECKING isMetric ===');
-        console.log('isMetric value:', isMetric);
-        console.log('isMetric type:', typeof isMetric);
-        console.log('isMetric === false:', isMetric === false);
-        console.log('isMetric === true:', isMetric === true);
+        console.log('isMetric:', isMetric);
         
-        // Check if user is using US/Imperial (isMetric = false = miles)
         if (isMetric === false) {
-            console.log('✅ User is US/Imperial → MILES');
+            console.log('✅ User is Imperial → MILES');
             return 'miles';
         } 
-        // Check if user is using Metric (isMetric = true = km)
         else if (isMetric === true) {
             console.log('✅ User is Metric → KM');
             return 'km';
         }
         
-        // Default fallback
-        console.log('⚠️ Could not determine unit, defaulting to km');
         return 'km';
         
     } catch (error) {
-        console.error('ERROR in getUserUnitPreference:', error);
-        console.error('Error message:', error.message);
-        return 'km'; // default to km on error
+        console.error('ERROR:', error);
+        return 'km';
     }
 }
 
