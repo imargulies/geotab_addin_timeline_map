@@ -375,42 +375,29 @@ async function getUserUnitPreference() {
         }
         
         const user = users[0];
-        console.log('===== FULL USER OBJECT =====');
+        console.log('===== USER OBJECT =====');
         console.log(JSON.stringify(user, null, 2));
         console.log('===== END USER OBJECT =====');
         
-        // Try multiple possible property names
-        console.log('Checking properties:');
-        console.log('  isMetric:', user.isMetric);
-        console.log('  unitOfMeasure:', user.unitOfMeasure);
-        console.log('  distanceUnit:', user.distanceUnit);
-        console.log('  measurementSystem:', user.measurementSystem);
-        console.log('  distanceMeasure:', user.distanceMeasure);
+        // Check isMetric property (from Geotab API docs)
+        // isMetric: true = metric (KM), false = imperial (Miles)
+        console.log('isMetric value:', user.isMetric);
         
-        alert('Full user object logged to console. Check console for details.');
-        
-        // Check isMetric first
-        if (user.isMetric === false) {
-            console.log('Result: isMetric=false, returning MILES');
-            return 'miles';
-        } else if (user.isMetric === true) {
-            console.log('Result: isMetric=true, returning KM');
+        if (user.isMetric === true) {
+            console.log('User is using metric system, returning km');
             return 'km';
-        }
-        
-        // Check unitOfMeasure
-        if (user.unitOfMeasure === 'miles') {
-            console.log('Result: unitOfMeasure=miles, returning MILES');
+        } else if (user.isMetric === false) {
+            console.log('User is using imperial system, returning miles');
             return 'miles';
         }
         
-        console.log('No preference found, defaulting to KM');
+        // Default to km if isMetric is not set
+        console.log('isMetric not found, defaulting to km');
         return 'km';
         
     } catch (error) {
         console.error('ERROR in getUserUnitPreference:', error);
-        alert('ERROR: ' + error.message);
-        return 'km';
+        return 'km'; // default to km on error
     }
 }
 
