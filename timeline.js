@@ -149,7 +149,15 @@ function formatDate(date) {
     return `${year}-${month}-${day}`;
 }
 
+// Format time for time input (HH:MM)
+function formatTime(date) {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
 
+// Setup event listeners
+function setupEventListeners() {
     document.getElementById('load-data').addEventListener('click', loadTimelineData);
     
     // Auto-update end time when start date/time changes
@@ -159,6 +167,59 @@ function formatDate(date) {
     // Validate time range when end date/time changes
     document.getElementById('end-date').addEventListener('change', validateTimeRange);
     document.getElementById('end-time').addEventListener('change', validateTimeRange);
+}
+
+// Show notification to user
+function showNotification(message, type) {
+    // type can be: 'info', 'warning', 'error', 'success'
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // Set background color based on type
+    switch(type) {
+        case 'error':
+            notification.style.backgroundColor = '#e74c3c';
+            break;
+        case 'warning':
+            notification.style.backgroundColor = '#f39c12';
+            break;
+        case 'success':
+            notification.style.backgroundColor = '#27ae60';
+            break;
+        case 'info':
+        default:
+            notification.style.backgroundColor = '#3498db';
+            break;
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 4000);
 }
 
 // Validate that time range doesn't exceed 1 hour
@@ -208,7 +269,7 @@ function updateEndDateTime() {
     }
 }
 
-// Load devices into dropdown using Geotab state.getGroupFilter() - WITH ENHANCED ERROR HANDLING
+// Load devices into dropdown using Geotab state.getGroupFilter()
 async function loadDevices() {
     console.log('=== loadDevices() START ===');
     
@@ -225,14 +286,14 @@ async function loadDevices() {
     if (!api) {
         console.error('CRITICAL: API object is null in loadDevices!');
         select.innerHTML = '<option value="">Error: API not available</option>';
-        alert('Error: Geotab API not available. Please reload the page.');
+        showNotification('Error: Geotab API not available. Please reload the page.', 'error');
         return;
     }
     
     if (!state) {
         console.error('CRITICAL: State object is null in loadDevices!');
         select.innerHTML = '<option value="">Error: State not available</option>';
-        alert('Error: Geotab State not available. Please reload the page.');
+        showNotification('Error: Geotab State not available. Please reload the page.', 'error');
         return;
     }
     
@@ -307,24 +368,52 @@ async function loadDevices() {
         console.error('Full error object:', error);
         
         select.innerHTML = '<option value="">Error loading vehicles</option>';
-        
-        // Show detailed error to user
-        const errorDetails = `Error loading vehicles from Geotab:
-
-Type: ${error.constructor.name}
-Message: ${error.message}
-
-Please check:
-1. You are logged into Geotab
-2. You have permission to view vehicles
-3. The browser console for more details
-
-Technical details:
-${error.stack || 'No stack trace available'}`;
-        
-        alert(errorDetails);
+        showNotification('Error loading vehicles: ' + error.message, 'error');
     }
+}
 
+// Get user's unit preference from Geotab settings
+async function getUserUnitPreference() {
+    try {
+        console.log('=== Getting user unit preference ===');
+        
+        // Get current session user
+        const users = await api.call('Get', {
+            typeName: 'User',
+            search: {
+                isDriver: false
+            },
+            resultsLimit: 1
+        });
+        
+        if (!users || users.length === 0) {
+            console.log('No users found, defaulting to km');
+            return 'km';
+        }
+        
+        const currentUser = users[0];
+        console.log('Current user:', currentUser.name);
+        
+        // Check isMetric property
+        const isMetric = currentUser.isMetric;
+        console.log('isMetric value:', isMetric);
+        
+        if (isMetric === false) {
+            console.log('User prefers Imperial units (miles)');
+            return 'miles';
+        } else {
+            console.log('User prefers Metric units (km)');
+            return 'km';
+        }
+        
+    } catch (error) {
+        console.error('Error getting unit preference:', error);
+        return 'km'; // Default to km on error
+    }
+}
+
+// Convert speed based on user's unit preference
+function formatSpeed(speedKmh) {
     if (unitPreference === 'miles') {
         // Convert km/h to mph (divide by 1.609)
         return Math.round(speedKmh / 1.609);
@@ -379,11 +468,9 @@ async function loadTimelineData() {
             const unit = await getUserUnitPreference();
             unitPreference = unit;
             console.log('Unit preference set to:', unitPreference);
-            
         } catch (err) {
             console.error('Error getting unit preference:', err);
             unitPreference = 'km';
-            
         }
 
         if (!records || records.length === 0) {
@@ -443,6 +530,9 @@ async function loadTimelineData() {
             const bounds = locationData.map(p => [p.latitude, p.longitude]);
             map.fitBounds(bounds);
         }
+        
+        showNotification(`Loaded ${locationData.length} GPS points`, 'success');
+        
     } catch (error) {
         console.error('Error loading timeline data:', error);
         document.getElementById('loading').style.display = 'none';
@@ -823,8 +913,6 @@ function selectMinute(index) {
     const intervalMinutes = parseInt(document.getElementById('minute-interval').value) || 1;
     
     // Calculate how many points to show (interval determines segment size)
-    // For 1 min: show 1 point forward = 2 points total (clicked + 1)
-    // For 5 min: show 5 points forward = 6 points total (clicked + 5)
     const pointsToShow = intervalMinutes;
     
     const segmentStart = index;
@@ -839,7 +927,6 @@ function selectMinute(index) {
     if (startMarker) {
         startMarker.setLatLng([startPoint.latitude, startPoint.longitude]);
     } else {
-        // Create new marker
         startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
             radius: 8,
             fillColor: "#27ae60",
@@ -854,7 +941,6 @@ function selectMinute(index) {
     if (endMarker) {
         endMarker.setLatLng([endPoint.latitude, endPoint.longitude]);
     } else {
-        // Create new marker
         endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
             radius: 8,
             fillColor: "#e74c3c",
@@ -871,7 +957,6 @@ function selectMinute(index) {
     }
 
     // Show trail for THIS SEGMENT - ROAD SNAPPING VERSION using OSRM
-    // Show segment around clicked point
     const trailPoints = locationData.slice(segmentStart, segmentEnd + 1)
         .map(p => [p.latitude, p.longitude]);
     
@@ -888,9 +973,7 @@ function selectMinute(index) {
                 let routeCoordinates = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
                 
                 // Force the route to start and end at EXACT GPS points
-                // Replace first point with actual start GPS coordinate
                 routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
-                // Replace last point with actual end GPS coordinate
                 routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
                 
                 pathPolyline.setLatLngs(routeCoordinates).addTo(map);
@@ -900,8 +983,6 @@ function selectMinute(index) {
             } else {
                 // Fallback to straight line if routing fails
                 pathPolyline.setLatLngs(trailPoints).addTo(map);
-                
-                // Add arrows to straight line fallback
                 addArrowsToPath(trailPoints);
             }
         })
@@ -909,8 +990,6 @@ function selectMinute(index) {
             console.log('Road snapping failed, using straight line:', error);
             // Fallback to straight line on error
             pathPolyline.setLatLngs(trailPoints).addTo(map);
-            
-            // Add arrows to fallback path
             addArrowsToPath(trailPoints);
         });
 
