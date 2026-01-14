@@ -332,60 +332,7 @@ ${error.stack || 'No stack trace available'}`;
         
         alert(errorDetails);
     }
-}
 
-// Get user's unit preference from Geotab settings
-async function getUserUnitPreference() {
-    try {
-        console.log('=== Starting getUserUnitPreference ===');
-        
-        // Get current user from state
-        const currentUser = state.getCurrentUser();
-        console.log('Current user object:', currentUser);
-        
-        if (!currentUser) {
-            console.log('No current user, returning km');
-            return 'km';
-        }
-        
-        console.log('Current user name:', currentUser.name);
-        console.log('Current user email:', currentUser.email);
-        console.log('Current user ID:', currentUser.id);
-        
-        const isMetric = currentUser.isMetric;
-        console.log('isMetric value:', isMetric);
-        console.log('isMetric type:', typeof isMetric);
-        
-        if (isMetric === false) {
-            console.log('✅ User: ' + currentUser.name + ' (' + currentUser.email + ') is Imperial → MILES');
-            return 'miles';
-        } 
-        else if (isMetric === true) {
-            console.log('✅ User: ' + currentUser.name + ' (' + currentUser.email + ') is Metric → KM');
-            return 'km';
-        }
-        
-        console.log('isMetric is undefined, defaulting to km');
-        return 'km';
-        
-    } catch (error) {
-        console.error('ERROR in getUserUnitPreference:', error);
-        console.error('Error details:', error.message);
-        return 'km';
-    }
-}
-
-// Convert speed based on user's unit preference
-function formatSpeed(speedKmh) {
-    if (unitPreference === 'miles') {
-        // Convert km/h to mph (divide by 1.609)
-        return Math.round(speedKmh / 1.609);
-    }
-    return Math.round(speedKmh);
-}
-
-// Load timeline data from Geotab
-async function loadTimelineData() {
     const vehicleId = document.getElementById('vehicle-select').value;
     const startDate = document.getElementById('start-date').value;
     const startTime = document.getElementById('start-time').value;
