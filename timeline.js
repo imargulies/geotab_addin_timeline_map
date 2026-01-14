@@ -445,17 +445,11 @@ async function loadTimelineData() {
         });
 
         console.log(`Loaded ${records.length} log records`);
-        // Get user's unit preference before displaying data
-        try {
-            console.log('About to call getUserUnitPreference...');
-            const unit = await getUserUnitPreference();
-            console.log('Received unit from getUserUnitPreference:', unit);
-            unitPreference = unit;
-            console.log('Unit preference set to:', unitPreference);
-        } catch (err) {
-            console.error('Error getting unit preference:', err);
-            console.log('Defaulting to km');
-        }
+        
+        // TEMPORARY TEST: Force miles to verify display works
+        console.log('TEST: Setting unit preference to miles');
+        unitPreference = 'miles';
+        console.log('TEST: Unit preference is now:', unitPreference);
 
         if (!records || records.length === 0) {
             document.getElementById('loading').style.display = 'none';
