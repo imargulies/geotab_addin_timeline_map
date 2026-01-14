@@ -468,11 +468,17 @@ async function loadTimelineData() {
         });
 
         console.log(`Loaded ${records.length} log records`);
-
         // Get user's unit preference before displaying data
-        const unit = await getUserUnitPreference();
-        unitPreference = unit;
-        console.log('Unit preference set to:', unitPreference);
+        try {
+            console.log('About to call getUserUnitPreference...');
+            const unit = await getUserUnitPreference();
+            console.log('Received unit from getUserUnitPreference:', unit);
+            unitPreference = unit;
+            console.log('Unit preference set to:', unitPreference);
+        } catch (err) {
+            console.error('Error getting unit preference:', err);
+            console.log('Defaulting to km');
+        }
 
         if (!records || records.length === 0) {
             document.getElementById('loading').style.display = 'none';
