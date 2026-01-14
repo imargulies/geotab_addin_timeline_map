@@ -380,17 +380,28 @@ async function getUserUnitPreference() {
             console.log(`  ${key}: ${user[key]}`);
         });
         
+        // Show what we're checking
+        console.log('Checking isMetric property:', user.isMetric);
+        alert('User isMetric setting: ' + user.isMetric);
+        
         // Check for miles preference
         if (user.isMetric === false) {
             console.log('User setting isMetric=false, returning miles');
+            alert('Returning MILES because isMetric=false');
             return 'miles';
+        } else if (user.isMetric === true) {
+            console.log('User setting isMetric=true, returning km');
+            alert('Returning KM because isMetric=true');
+            return 'km';
         }
         
-        console.log('No miles preference found, returning km');
+        console.log('No isMetric setting found, returning km');
+        alert('No isMetric found, defaulting to KM');
         return 'km';
         
     } catch (error) {
         console.error('ERROR in getUserUnitPreference:', error);
+        alert('ERROR: ' + error.message);
         return 'km';
     }
 }
