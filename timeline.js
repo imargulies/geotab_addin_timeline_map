@@ -886,35 +886,7 @@ function selectMinute(index) {
     // End marker at end of interval
     const endPoint = locationData[segmentEnd];
     
-    // Update or create start marker (green)
-    if (startMarker) {
-        startMarker.setLatLng([startPoint.latitude, startPoint.longitude]);
-    } else {
-        // Create new marker
-        startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
-            radius: 8,
-            fillColor: "#27ae60",
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map);
-    }
-    
-    // Update or create end marker (red)
-    if (endMarker) {
-        endMarker.setLatLng([endPoint.latitude, endPoint.longitude]);
-    } else {
-        // Create new marker
-        endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
-            radius: 8,
-            fillColor: "#e74c3c",
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map);
-    }
+
     
     // Remove the vehicle marker (no longer needed)
     if (vehicleMarker) {
@@ -969,6 +941,5 @@ function selectMinute(index) {
     const bounds = L.latLngBounds([startPoint.latitude, startPoint.longitude], [endPoint.latitude, endPoint.longitude]);
     map.fitBounds(bounds, { padding: [50, 50] });
 
-    // Hide the info panel since we're using popups on markers
-    document.getElementById('map-info').style.display = 'none';
+
 }
