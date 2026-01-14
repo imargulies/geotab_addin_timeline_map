@@ -332,44 +332,7 @@ ${error.stack || 'No stack trace available'}`;
 }
 
 // Get user's unit preference from Geotab settings - FIXED FOR YOUR USER
-async function getUserUnitPreference() {
-    try {
-        console.log('=== Starting getUserUnitPreference ===');
-        
-        const users = await api.call('Get', {
-            typeName: 'User',
-            search: {
-                name: 'israel.margulies@highpointgps.com'  // YOUR NAME
-            }
-        });
-        
-        if (!users || users.length === 0) {
-            console.log('No users found, returning km');
-            return 'km';
-        }
-        
-        const currentUser = users[0];
-        console.log('Current user:', currentUser.name);
-        
-        const isMetric = currentUser.isMetric;
-        console.log('isMetric:', isMetric);
-        
-        if (isMetric === false) {
-            console.log('✅ User is Imperial → MILES');
-            return 'miles';
-        } 
-        else if (isMetric === true) {
-            console.log('✅ User is Metric → KM');
-            return 'km';
-        }
-        
-        return 'km';
-        
-    } catch (error) {
-        console.error('ERROR:', error);
-        return 'km';
-    }
-}
+
 
 // Convert speed based on user's unit preference
 function formatSpeed(speedKmh) {
