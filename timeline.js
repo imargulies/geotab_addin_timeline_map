@@ -350,6 +350,8 @@ async function getUserUnitPreference() {
     try {
         // Get current user from state
         const currentUser = state.getUser();
+        console.log('Current user object:', currentUser);
+        
         if (!currentUser || !currentUser.id) {
             console.warn('Unable to get current user');
             return 'km'; // default to km
@@ -363,18 +365,34 @@ async function getUserUnitPreference() {
             }
         });
         
+        console.log('Full user object from API:', users);
+        
         if (users && users.length > 0) {
             const user = users[0];
-            console.log('User settings retrieved:', user);
-            // Check user's unit of measure preference
-            // unitOfMeasure: 'km' or 'miles'
-            const unit = user.unitOfMeasure === 'miles' ? 'miles' : 'km';
-            console.log('User unit preference:', unit);
+            console.log('User object keys:', Object.keys(user));
+            console.log('Full user settings retrieved:', JSON.stringify(user, null, 2));
+            
+            // Check multiple possible property names for unit preference
+            let unit = 'km'; // default
+            
+            // Try different property names that Geotab might use
+            if (user.unitOfMeasure === 'miles' || user.distanceUnit === 'miles') {
+                unit = 'miles';
+            } else if (user.unitOfMeasure === 'km' || user.distanceUnit === 'km') {
+                unit = 'km';
+            } else if (user.isMetric === false) {
+                unit = 'miles';
+            } else if (user.isMetric === true) {
+                unit = 'km';
+            }
+            
+            console.log('Detected unit preference:', unit);
             return unit;
         }
         return 'km'; // default to km
     } catch (error) {
         console.error('Error getting user unit preference:', error);
+        console.error('Error details:', error.message);
         return 'km'; // default to km on error
     }
 }
