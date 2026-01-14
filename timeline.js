@@ -881,23 +881,14 @@ function selectMinute(index) {
     const segmentStart = index;
     const segmentEnd = Math.min(locationData.length - 1, index + pointsToShow);
     
-    console.log(`Clicked index: ${index}, interval: ${intervalMinutes} min, showing segment from ${segmentStart} to ${segmentEnd}`);
-    
     // Start marker at clicked point
     const startPoint = locationData[segmentStart];
     // End marker at end of interval
     const endPoint = locationData[segmentEnd];
     
-    console.log(`Start point (clicked):`, startPoint);
-    console.log(`End point (${intervalMinutes} min after):`, endPoint);
-    
     // Update or create start marker (green)
     if (startMarker) {
-        // Close old popup first
-        startMarker.closePopup();
-        // Update existing marker position
         startMarker.setLatLng([startPoint.latitude, startPoint.longitude]);
-        console.log(`Updated green marker to: ${startPoint.latitude}, ${startPoint.longitude}`);
     } else {
         // Create new marker
         startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
@@ -908,48 +899,11 @@ function selectMinute(index) {
             opacity: 1,
             fillOpacity: 0.9
         }).addTo(map);
-        console.log(`Created green marker at: ${startPoint.latitude}, ${startPoint.longitude}`);
     }
-    
-    // Add popup to start marker with time and address
-    const startDate = new Date(startPoint.dateTime);
-    const startTimeStr = startDate.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-    const startAddressFull = formatAddressWithoutCountry(startPoint.address);
-    // Split address into 2 lines (street on line 1, city/state/zip on line 2)
-    const startAddressParts = startAddressFull.split(',');
-    const startLine1 = startAddressParts[0] || '';
-    const startLine2 = startAddressParts.slice(1).join(',').trim();
-    
-    const startPopupContent = `
-        <div style="font-size: 10px; padding: 2px; line-height: 1.2;">
-            <strong style="color: #27ae60; font-size: 9px;">START</strong><br>
-            <div style="margin-top: 2px; font-size: 9px;">${startTimeStr}</div>
-            <div style="margin-top: 2px; color: #666; font-size: 9px; line-height: 1.2;">
-                ${startLine1}<br>${startLine2}
-            </div>
-        </div>
-    `;
-    startMarker.bindPopup(startPopupContent, {
-        closeButton: false,
-        autoClose: false,
-        closeOnClick: false,
-        offset: [0, -5],
-        className: 'compact-popup'
-    }).openPopup();
     
     // Update or create end marker (red)
     if (endMarker) {
-        // Close old popup first
-        endMarker.closePopup();
-        // Update existing marker position
         endMarker.setLatLng([endPoint.latitude, endPoint.longitude]);
-        console.log(`Updated red marker to: ${endPoint.latitude}, ${endPoint.longitude}`);
     } else {
         // Create new marker
         endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
@@ -960,40 +914,7 @@ function selectMinute(index) {
             opacity: 1,
             fillOpacity: 0.9
         }).addTo(map);
-        console.log(`Created red marker at: ${endPoint.latitude}, ${endPoint.longitude}`);
     }
-    
-    // Add popup to end marker with time and address
-    const endDate = new Date(endPoint.dateTime);
-    const endTimeStr = endDate.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-    const endAddressFull = formatAddressWithoutCountry(endPoint.address);
-    // Split address into 2 lines (street on line 1, city/state/zip on line 2)
-    const endAddressParts = endAddressFull.split(',');
-    const endLine1 = endAddressParts[0] || '';
-    const endLine2 = endAddressParts.slice(1).join(',').trim();
-    
-    const endPopupContent = `
-        <div style="font-size: 10px; padding: 2px; line-height: 1.2;">
-            <strong style="color: #e74c3c; font-size: 9px;">END</strong><br>
-            <div style="margin-top: 2px; font-size: 9px;">${endTimeStr}</div>
-            <div style="margin-top: 2px; color: #666; font-size: 9px; line-height: 1.2;">
-                ${endLine1}<br>${endLine2}
-            </div>
-        </div>
-    `;
-    endMarker.bindPopup(endPopupContent, {
-        closeButton: false,
-        autoClose: false,
-        closeOnClick: false,
-        offset: [0, -5],
-        className: 'compact-popup'
-    }).openPopup();
     
     // Remove the vehicle marker (no longer needed)
     if (vehicleMarker) {
@@ -1001,7 +922,7 @@ function selectMinute(index) {
     }
 
     // Show trail for THIS SEGMENT - ROAD SNAPPING VERSION using OSRM
-    // Show segment around clicked point (5 before + clicked + 5 after)
+    // Show segment around clicked point
     const trailPoints = locationData.slice(segmentStart, segmentEnd + 1)
         .map(p => [p.latitude, p.longitude]);
     
