@@ -10,89 +10,57 @@ let unitPreference = 'km'; // User's unit preference: 'km' or 'miles'
 geotab.addin.gpsMinuteByMinute = function() {
     return {
         initialize: function(freshApi, freshState, callback) {
-            console.log('=== GPS Minute by Minute Add-in Initialize START ===');
-            
             api = freshApi;
             state = freshState;
             
-            console.log('API object:', api);
-            console.log('State object:', state);
-            console.log('API type:', typeof api);
-            console.log('State type:', typeof state);
-            
             // Verify API and state are valid
             if (!api) {
-                console.error('CRITICAL: API object is null or undefined!');
                 alert('Error: Geotab API not available. Please reload the page.');
                 callback();
                 return;
             }
             
             if (!state) {
-                console.error('CRITICAL: State object is null or undefined!');
                 alert('Error: Geotab State not available. Please reload the page.');
                 callback();
                 return;
             }
             
             if (typeof api.call !== 'function') {
-                console.error('CRITICAL: api.call is not a function!');
                 alert('Error: Geotab API.call not available. Please reload the page.');
                 callback();
                 return;
             }
             
             if (typeof state.getGroupFilter !== 'function') {
-                console.error('CRITICAL: state.getGroupFilter is not a function!');
                 alert('Error: Geotab State.getGroupFilter not available. Please reload the page.');
                 callback();
                 return;
             }
             
-            console.log('API and State validation passed');
-            
             try {
                 initMap();
-                console.log('Map initialized');
-                
                 setDefaultDates();
-                console.log('Default dates set');
-                
                 setupEventListeners();
-                console.log('Event listeners set up');
                 
                 // Load devices into dropdown using state.getGroupFilter()
-                loadDevices()
-                    .then(() => {
-                        console.log('Devices loaded successfully');
-                    })
-                    .catch(err => {
-                        console.error('Error loading devices during initialize:', err);
-                    });
+                loadDevices();
                 
-                console.log('=== GPS Minute by Minute Add-in Initialize END ===');
                 callback();
             } catch (error) {
-                console.error('Error during initialization:', error);
                 alert('Error initializing add-in: ' + error.message);
                 callback();
             }
         },
         
         focus: function(freshApi, freshState) {
-            console.log('=== Add-in FOCUS called ===');
             api = freshApi;
             state = freshState;
-            console.log('API and State refreshed on focus');
             // Reload devices when user returns to add-in
-            loadDevices()
-                .catch(err => {
-                    console.error('Error reloading devices on focus:', err);
-                });
+            loadDevices();
         },
         
         blur: function(freshApi, freshState) {
-            console.log('=== Add-in BLUR called ===');
             // Clean up if needed
         }
     };
@@ -171,9 +139,6 @@ function setupEventListeners() {
 
 // Show notification to user
 function showNotification(message, type) {
-    // type can be: 'info', 'warning', 'error', 'success'
-    console.log('[' + type.toUpperCase() + '] ' + message);
-    
     // Get main-container for positioning
     var mainContainer = document.getElementById('main-container');
     
@@ -278,12 +243,9 @@ function updateEndDateTime() {
 
 // Load devices into dropdown using Geotab state.getGroupFilter()
 async function loadDevices() {
-    console.log('=== loadDevices() START ===');
-    
     const select = document.getElementById('vehicle-select');
     
     if (!select) {
-        console.error('CRITICAL: vehicle-select element not found in DOM!');
         return;
     }
     
@@ -291,35 +253,20 @@ async function loadDevices() {
     
     // Verify API and state are still available
     if (!api) {
-        console.error('CRITICAL: API object is null in loadDevices!');
         select.innerHTML = '<option value="">Error: API not available</option>';
         showNotification('Error: Geotab API not available. Please reload the page.', 'error');
         return;
     }
     
     if (!state) {
-        console.error('CRITICAL: State object is null in loadDevices!');
         select.innerHTML = '<option value="">Error: State not available</option>';
         showNotification('Error: Geotab State not available. Please reload the page.', 'error');
         return;
     }
     
     try {
-        console.log('Calling state.getGroupFilter()...');
-        
         // Get group filter from state (this respects user's group permissions)
         const groupFilter = state.getGroupFilter();
-        
-        console.log('Group filter retrieved:', groupFilter);
-        console.log('Group filter type:', typeof groupFilter);
-        console.log('Group filter is array:', Array.isArray(groupFilter));
-        
-        if (groupFilter) {
-            console.log('Group filter length:', groupFilter.length);
-            console.log('Group filter contents:', JSON.stringify(groupFilter, null, 2));
-        }
-        
-        console.log('Calling api.call to get devices...');
         
         // Call Geotab API to get devices filtered by user's group
         const devices = await api.call('Get', {
@@ -329,22 +276,15 @@ async function loadDevices() {
             }
         });
         
-        console.log('API call successful!');
-        console.log(`Received ${devices ? devices.length : 0} devices`);
-        
         if (!devices) {
-            console.warn('No devices returned from API call');
             select.innerHTML = '<option value="">No vehicles found</option>';
             return;
         }
         
         if (devices.length === 0) {
-            console.warn('Empty devices array returned');
             select.innerHTML = '<option value="">No vehicles available</option>';
             return;
         }
-        
-        console.log('First device sample:', JSON.stringify(devices[0], null, 2));
         
         // Clear and populate dropdown
         select.innerHTML = '<option value="">Select a vehicle...</option>';
@@ -357,23 +297,13 @@ async function loadDevices() {
         });
         
         devices.forEach((device, index) => {
-            console.log(`Adding device ${index + 1}/${devices.length}: ${device.name} (${device.id})`);
             const option = document.createElement('option');
             option.value = device.id;
             option.textContent = device.name;
             select.appendChild(option);
         });
         
-        console.log('Vehicle dropdown populated successfully with', devices.length, 'vehicles');
-        console.log('=== loadDevices() END SUCCESS ===');
-        
     } catch (error) {
-        console.error('=== loadDevices() ERROR ===');
-        console.error('Error type:', error.constructor.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        console.error('Full error object:', error);
-        
         select.innerHTML = '<option value="">Error loading vehicles</option>';
         showNotification('Error loading vehicles: ' + error.message, 'error');
     }
@@ -382,20 +312,13 @@ async function loadDevices() {
 // Get user's unit preference from Geotab settings
 function getUserUnitPreference() {
     return new Promise((resolve) => {
-        console.log('=== Getting user unit preference ===');
-        
         try {
             // Use callback-based getSession to get current user
             api.getSession(function(sessionInfo) {
-                console.log('Session info:', sessionInfo);
-                
                 if (!sessionInfo || !sessionInfo.userName) {
-                    console.log('No session info found, defaulting to km');
                     resolve('km');
                     return;
                 }
-                
-                console.log('Current session user:', sessionInfo.userName);
                 
                 // Get the user object for the logged-in user
                 api.call('Get', {
@@ -405,32 +328,27 @@ function getUserUnitPreference() {
                     }
                 }, function(users) {
                     if (!users || users.length === 0) {
-                        console.log('User not found, defaulting to km');
                         resolve('km');
                         return;
                     }
                     
                     const currentUser = users[0];
-                    console.log('Current user:', currentUser.name);
                     
                     // Check isMetric property
                     const isMetric = currentUser.isMetric;
-                    console.log('isMetric value:', isMetric);
                     
                     if (isMetric === false) {
-                        console.log('User prefers Imperial units (miles)');
+                        console.log('isMetric: miles');
                         resolve('miles');
                     } else {
-                        console.log('User prefers Metric units (km)');
+                        console.log('isMetric: km');
                         resolve('km');
                     }
                 }, function(error) {
-                    console.error('Error getting user:', error);
                     resolve('km'); // Default to km on error
                 });
             });
         } catch (error) {
-            console.error('Error getting unit preference:', error);
             resolve('km'); // Default to km on error
         }
     });
@@ -471,8 +389,6 @@ async function loadTimelineData() {
     document.getElementById('timeline-list').innerHTML = '';
     
     try {
-        console.log(`Loading GPS data for vehicle ${vehicleId} from ${startDateTime} to ${endDateTime}`);
-        
         // Get LogRecords from Geotab
         const records = await api.call('Get', {
             typeName: 'LogRecord',
@@ -485,15 +401,11 @@ async function loadTimelineData() {
             }
         });
 
-        console.log(`Loaded ${records.length} log records`);
-        
         // Get user's unit preference from Geotab
         try {
             const unit = await getUserUnitPreference();
             unitPreference = unit;
-            console.log('Unit preference set to:', unitPreference);
         } catch (err) {
-            console.error('Error getting unit preference:', err);
             unitPreference = 'km';
         }
 
@@ -513,8 +425,6 @@ async function loadTimelineData() {
         
         // Get zones and check if points are in zones
         await checkZones(locationData);
-        
-        console.log(`Filtered to ${locationData.length} minute intervals`);
         
         document.getElementById('point-count').textContent = locationData.length;
 
@@ -558,7 +468,6 @@ async function loadTimelineData() {
         showNotification(`Loaded ${locationData.length} GPS points`, 'success');
         
     } catch (error) {
-        console.error('Error loading timeline data:', error);
         document.getElementById('loading').style.display = 'none';
         showNotification('Error loading data: ' + error.message, 'error');
     }
@@ -645,8 +554,6 @@ async function checkZones(points) {
             typeName: 'Zone'
         });
         
-        console.log(`Loaded ${zones.length} zones`);
-        
         // Check each point against zones
         points.forEach(point => {
             for (const zone of zones) {
@@ -657,7 +564,7 @@ async function checkZones(points) {
             }
         });
     } catch (error) {
-        console.error('Error loading zones:', error);
+        // Silent fail for zones
     }
 }
 
@@ -745,7 +652,6 @@ async function geocodeBatch(points) {
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
         } catch (error) {
-            console.error('Geocoding batch error:', error);
             // Fallback to coordinates
             batch.forEach(point => {
                 point.address = `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`;
@@ -1011,7 +917,6 @@ function selectMinute(index) {
             }
         })
         .catch(error => {
-            console.log('Road snapping failed, using straight line:', error);
             // Fallback to straight line on error
             pathPolyline.setLatLngs(trailPoints).addTo(map);
             addArrowsToPath(trailPoints);
