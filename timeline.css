@@ -384,7 +384,7 @@ button:disabled {
 
 /* Compact popup styling - remove extra padding */
 .compact-popup .leaflet-popup-content-wrapper {
-    padding: 8px 12px !important;
+    padding: 5px 8px !important;
 }
 
 .compact-popup .leaflet-popup-content {
