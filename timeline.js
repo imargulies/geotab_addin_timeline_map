@@ -680,8 +680,33 @@ async function geocodeBatch(points) {
 // Format address without country (remove ", USA" or ", Country")
 function formatAddressWithoutCountry(address) {
     if (!address) return 'Loading address...';
-    // Remove country at the end (e.g., ", USA")
-    return address.replace(/, [A-Z]{2,}$/i, '').trim();
+    // Remove country at the end (e.g., ", USA", ", Canada", etc.)
+    return address.replace(/, [A-Z][a-zA-Z\s]*$/i, '').trim();
+}
+
+// Format address for popup: street on first line, city/postal on second line, no country
+function formatAddressForPopup(address) {
+    if (!address) return 'Loading address...';
+    
+    // Remove country at the end (e.g., ", USA", ", Canada", etc.)
+    let cleaned = address.replace(/, [A-Z][a-zA-Z\s]*$/i, '').trim();
+    
+    // Split by comma to separate parts
+    const parts = cleaned.split(',').map(p => p.trim());
+    
+    if (parts.length >= 3) {
+        // Typical format: "123 Main St, City, State Postal"
+        // First part is street, rest is city/state/postal
+        const street = parts[0];
+        const cityPostal = parts.slice(1).join(', ');
+        return `${street}<br>${cityPostal}`;
+    } else if (parts.length === 2) {
+        // Two parts: street, city or city, postal
+        return `${parts[0]}<br>${parts[1]}`;
+    }
+    
+    // Return as-is if can't parse
+    return cleaned;
 }
 
 // Determine vehicle status based on speed
@@ -865,33 +890,75 @@ function selectMinute(index) {
     // End marker at end of interval
     const endPoint = locationData[segmentEnd];
     
-    // Update or create start marker (green)
-    if (startMarker) {
-        startMarker.setLatLng([startPoint.latitude, startPoint.longitude]);
-    } else {
-        startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
-            radius: 8,
-            fillColor: "#27ae60",
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map);
+    // Get start time
+    const startDate = new Date(startPoint.dateTime);
+    const startTimeStr = startDate.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    // Get end time and status
+    const endDate = new Date(endPoint.dateTime);
+    const endTimeStr = endDate.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    const endSpeedKmh = endPoint.speed || 0;
+    const endStatus = getVehicleStatus(endSpeedKmh);
+    
+    // Determine end marker color based on status
+    let endMarkerColor = '#e74c3c'; // Default red (stopped)
+    if (endStatus.class === 'idling') {
+        endMarkerColor = '#f39c12'; // Orange for idling
+    } else if (endStatus.class === 'driving') {
+        endMarkerColor = '#e74c3c'; // Red for driving/stopped
     }
     
-    // Update or create end marker (red)
-    if (endMarker) {
-        endMarker.setLatLng([endPoint.latitude, endPoint.longitude]);
-    } else {
-        endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
-            radius: 8,
-            fillColor: "#e74c3c",
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map);
+    // Remove existing markers
+    if (startMarker) {
+        map.removeLayer(startMarker);
     }
+    if (endMarker) {
+        map.removeLayer(endMarker);
+    }
+    
+    // Create start marker (green) with popup
+    startMarker = L.circleMarker([startPoint.latitude, startPoint.longitude], {
+        radius: 8,
+        fillColor: "#27ae60",
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+    }).addTo(map);
+    
+    // Format addresses for popups
+    const startAddressFormatted = formatAddressForPopup(startPoint.address);
+    const endAddressFormatted = formatAddressForPopup(endPoint.address);
+    
+    startMarker.bindPopup(`<b>Start</b><br>${startTimeStr}<br><span style="font-size:11px;color:#666;">${startAddressFormatted}</span>`, {
+        className: 'compact-popup',
+        closeButton: false,
+        offset: [0, -5]
+    }).openPopup();
+    
+    // Create end marker with popup (color based on status)
+    endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
+        radius: 8,
+        fillColor: endMarkerColor,
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+    }).addTo(map);
+    
+    endMarker.bindPopup(`<b>End</b><br>${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}</span><br><span style="font-size:11px;color:#666;">${endAddressFormatted}</span>`, {
+        className: 'compact-popup',
+        closeButton: false,
+        offset: [0, -5]
+    });
     
     // Remove the vehicle marker (no longer needed)
     if (vehicleMarker) {
@@ -943,4 +1010,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V9');
+console.log('V2');
