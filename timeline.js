@@ -172,24 +172,21 @@ function setupEventListeners() {
 // Show notification to user
 function showNotification(message, type) {
     // type can be: 'info', 'warning', 'error', 'success'
-    console.log(`[${type.toUpperCase()}] ${message}`);
+    console.log('[' + type.toUpperCase() + '] ' + message);
     
     // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 12px 20px;
-        border-radius: 6px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        animation: slideIn 0.3s ease;
-    `;
+    var notification = document.createElement('div');
+    notification.className = 'notification notification-' + type;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.padding = '12px 20px';
+    notification.style.borderRadius = '6px';
+    notification.style.color = 'white';
+    notification.style.fontWeight = '500';
+    notification.style.zIndex = '10000';
+    notification.style.maxWidth = '400px';
+    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
     
     // Set background color based on type
     switch(type) {
@@ -212,9 +209,10 @@ function showNotification(message, type) {
     document.body.appendChild(notification);
     
     // Auto-remove after 4 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
+    setTimeout(function() {
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.3s ease';
+        setTimeout(function() {
             if (notification.parentNode) {
                 notification.parentNode.removeChild(notification);
             }
@@ -373,43 +371,60 @@ async function loadDevices() {
 }
 
 // Get user's unit preference from Geotab settings
-async function getUserUnitPreference() {
-    try {
+function getUserUnitPreference() {
+    return new Promise((resolve) => {
         console.log('=== Getting user unit preference ===');
         
-        // Get current session user
-        const users = await api.call('Get', {
-            typeName: 'User',
-            search: {
-                isDriver: false
-            },
-            resultsLimit: 1
-        });
-        
-        if (!users || users.length === 0) {
-            console.log('No users found, defaulting to km');
-            return 'km';
+        try {
+            // Use callback-based getSession to get current user
+            api.getSession(function(sessionInfo) {
+                console.log('Session info:', sessionInfo);
+                
+                if (!sessionInfo || !sessionInfo.userName) {
+                    console.log('No session info found, defaulting to km');
+                    resolve('km');
+                    return;
+                }
+                
+                console.log('Current session user:', sessionInfo.userName);
+                
+                // Get the user object for the logged-in user
+                api.call('Get', {
+                    typeName: 'User',
+                    search: {
+                        name: sessionInfo.userName
+                    }
+                }, function(users) {
+                    if (!users || users.length === 0) {
+                        console.log('User not found, defaulting to km');
+                        resolve('km');
+                        return;
+                    }
+                    
+                    const currentUser = users[0];
+                    console.log('Current user:', currentUser.name);
+                    
+                    // Check isMetric property
+                    const isMetric = currentUser.isMetric;
+                    console.log('isMetric value:', isMetric);
+                    
+                    if (isMetric === false) {
+                        console.log('User prefers Imperial units (miles)');
+                        resolve('miles');
+                    } else {
+                        console.log('User prefers Metric units (km)');
+                        resolve('km');
+                    }
+                }, function(error) {
+                    console.error('Error getting user:', error);
+                    resolve('km'); // Default to km on error
+                });
+            });
+        } catch (error) {
+            console.error('Error getting unit preference:', error);
+            resolve('km'); // Default to km on error
         }
-        
-        const currentUser = users[0];
-        console.log('Current user:', currentUser.name);
-        
-        // Check isMetric property
-        const isMetric = currentUser.isMetric;
-        console.log('isMetric value:', isMetric);
-        
-        if (isMetric === false) {
-            console.log('User prefers Imperial units (miles)');
-            return 'miles';
-        } else {
-            console.log('User prefers Metric units (km)');
-            return 'km';
-        }
-        
-    } catch (error) {
-        console.error('Error getting unit preference:', error);
-        return 'km'; // Default to km on error
-    }
+    });
 }
 
 // Convert speed based on user's unit preference
