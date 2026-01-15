@@ -174,10 +174,13 @@ function showNotification(message, type) {
     // type can be: 'info', 'warning', 'error', 'success'
     console.log('[' + type.toUpperCase() + '] ' + message);
     
+    // Get main-container for positioning
+    var mainContainer = document.getElementById('main-container');
+    
     // Create notification element
     var notification = document.createElement('div');
     notification.className = 'notification notification-' + type;
-    notification.style.position = 'fixed';
+    notification.style.position = 'absolute';
     notification.style.top = '20px';
     notification.style.right = '20px';
     notification.style.padding = '12px 20px';
@@ -206,7 +209,13 @@ function showNotification(message, type) {
     }
     
     notification.textContent = message;
-    document.body.appendChild(notification);
+    
+    // Append to main-container instead of body
+    if (mainContainer) {
+        mainContainer.appendChild(notification);
+    } else {
+        document.body.appendChild(notification);
+    }
     
     // Auto-remove after 4 seconds
     setTimeout(function() {
@@ -1015,3 +1024,6 @@ function selectMinute(index) {
     // Hide the info panel since we're using popups on markers
     document.getElementById('map-info').style.display = 'none';
 }
+
+// Version log
+console.log('V2');
