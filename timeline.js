@@ -938,7 +938,7 @@ function selectMinute(index) {
     const startAddressFormatted = formatAddressForPopup(startPoint.address);
     const endAddressFormatted = formatAddressForPopup(endPoint.address);
     
-    startMarker.bindPopup(`<b>Start</b><br>${startTimeStr}<br><span style="font-size:11px;color:#666;">${startAddressFormatted}</span>`, {
+    startMarker.bindPopup(`<div style="text-align:center;"><b style="color:#27ae60;">Start</b><br>${startTimeStr}<br><span style="font-size:11px;color:#666;">${startAddressFormatted}</span></div>`, {
         className: 'compact-popup',
         closeButton: false,
         offset: [0, -5]
@@ -954,7 +954,7 @@ function selectMinute(index) {
         fillOpacity: 0.9
     }).addTo(map);
     
-    endMarker.bindPopup(`<b>End</b><br>${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}:</span> <span style="font-size:11px;color:#666;">${endAddressFormatted}</span>`, {
+    endMarker.bindPopup(`<div style="text-align:center;"><b style="color:#e74c3c;">End</b><br>${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}:</span> <span style="font-size:11px;color:#666;">${endAddressFormatted}</span></div>`, {
         className: 'compact-popup',
         closeButton: false,
         offset: [0, -5]
@@ -1010,4 +1010,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V12');
+console.log('V13');
