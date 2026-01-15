@@ -79,6 +79,13 @@ function initMap() {
     setTimeout(function() {
         map.invalidateSize();
     }, 100);
+    
+    // Also invalidate on window resize
+    window.addEventListener('resize', function() {
+        if (map) {
+            map.invalidateSize();
+        }
+    });
 
     vehicleMarker = L.circleMarker([0, 0], {
         radius: 10,
@@ -936,4 +943,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V7');
+console.log('V8');
