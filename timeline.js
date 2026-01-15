@@ -1060,4 +1060,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V16');
+console.log('V17');
