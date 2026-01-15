@@ -946,7 +946,7 @@ function selectMinute(index) {
     if (endStatus.class === 'idling') {
         endMarkerColor = '#f39c12'; // Orange for idling
     } else if (endStatus.class === 'driving') {
-        endMarkerColor = '#e74c3c'; // Red for driving/stopped
+        endMarkerColor = '#27ae60'; // Green for driving
     }
     
     // Remove existing markers
@@ -1060,4 +1060,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V15');
+console.log('V16');
