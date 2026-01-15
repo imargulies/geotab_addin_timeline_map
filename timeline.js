@@ -971,8 +971,22 @@ function selectMinute(index) {
     const startAddressFormatted = formatAddressForPopup(startPoint.address);
     const endAddressFormatted = formatAddressForPopup(endPoint.address);
     
+    // Get start status
+    const startSpeedKmh = startPoint.speed || 0;
+    const startStatus = getVehicleStatus(startSpeedKmh);
+    
+    // Determine start marker color based on status
+    let startMarkerColor = '#27ae60'; // Default green
+    if (startStatus.class === 'stopped') {
+        startMarkerColor = '#e74c3c'; // Red for stopped
+    } else if (startStatus.class === 'idling') {
+        startMarkerColor = '#f39c12'; // Orange for idling
+    } else {
+        startMarkerColor = '#27ae60'; // Green for driving
+    }
+    
     // Use tooltips instead of popups so both can show at once
-    startMarker.bindTooltip(`<div style="text-align:center;"><b style="color:#27ae60;">Start</b> ${startTimeStr}<br><span style="font-size:11px;color:#666;">${startAddressFormatted}</span></div>`, {
+    startMarker.bindTooltip(`<div style="text-align:center;"><b style="color:#27ae60;">Start</b> ${startTimeStr}<br><span style="color:${startMarkerColor};font-weight:bold;">${startStatus.text}:</span> <span style="font-size:11px;color:#666;">${startAddressFormatted}</span></div>`, {
         permanent: true,
         direction: 'top',
         className: 'compact-tooltip',
@@ -1046,4 +1060,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V14');
+console.log('V15');
