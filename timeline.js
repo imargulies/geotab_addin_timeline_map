@@ -184,15 +184,16 @@ function showNotification(message, type) {
     var notification = document.createElement('div');
     notification.className = 'notification notification-' + type;
     notification.style.position = 'absolute';
-    notification.style.top = '20px';
-    notification.style.right = '20px';
-    notification.style.padding = '8px 12px';
-    notification.style.borderRadius = '6px';
+    notification.style.top = '10px';
+    notification.style.right = '10px';
+    notification.style.padding = '6px 10px';
+    notification.style.borderRadius = '4px';
     notification.style.color = 'white';
     notification.style.fontWeight = '500';
+    notification.style.fontSize = '13px';
     notification.style.zIndex = '10000';
-    notification.style.maxWidth = '400px';
-    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    notification.style.maxWidth = '300px';
+    notification.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
     
     // Set background color based on type
     switch(type) {
@@ -1060,4 +1061,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V17');
+console.log('V20');
