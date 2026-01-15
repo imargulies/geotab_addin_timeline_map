@@ -119,6 +119,26 @@ function setDefaultDates() {
     // Set times (1 hour ago to now) - uses user's local timezone automatically
     document.getElementById('start-time').value = formatTime(oneHourAgo);
     document.getElementById('end-time').value = formatTime(now);
+    
+    // Update date displays
+    updateDateDisplay('start-date');
+    updateDateDisplay('end-date');
+}
+
+// Format date for display (e.g., "January 15")
+function formatDateDisplay(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+}
+
+// Update the visible date display
+function updateDateDisplay(inputId) {
+    const input = document.getElementById(inputId);
+    const display = document.getElementById(inputId + '-display');
+    if (input && display) {
+        display.textContent = formatDateDisplay(input.value);
+    }
 }
 
 // Format date for date input (YYYY-MM-DD)
@@ -141,11 +161,17 @@ function setupEventListeners() {
     document.getElementById('load-data').addEventListener('click', loadTimelineData);
     
     // Auto-update end time when start date/time changes
-    document.getElementById('start-date').addEventListener('change', updateEndDateTime);
+    document.getElementById('start-date').addEventListener('change', function() {
+        updateDateDisplay('start-date');
+        updateEndDateTime();
+    });
     document.getElementById('start-time').addEventListener('change', updateEndDateTime);
     
     // Validate time range when end date/time changes
-    document.getElementById('end-date').addEventListener('change', validateTimeRange);
+    document.getElementById('end-date').addEventListener('change', function() {
+        updateDateDisplay('end-date');
+        validateTimeRange();
+    });
     document.getElementById('end-time').addEventListener('change', validateTimeRange);
 }
 
@@ -160,7 +186,7 @@ function showNotification(message, type) {
     notification.style.position = 'absolute';
     notification.style.top = '20px';
     notification.style.right = '20px';
-    notification.style.padding = '12px 20px';
+    notification.style.padding = '8px 12px';
     notification.style.borderRadius = '6px';
     notification.style.color = 'white';
     notification.style.fontWeight = '500';
@@ -225,11 +251,15 @@ function validateTimeRange() {
             document.getElementById('start-date').value = formatDate(newStartDateTime);
             document.getElementById('start-time').value = formatTime(newStartDateTime);
             
+            // Update date display
+            updateDateDisplay('start-date');
+            
             showNotification('Time range limited to 1 hour maximum. Start time adjusted automatically.', 'info');
         } else if (hoursDiff < 0) {
             // End is before start, swap them
             document.getElementById('end-date').value = formatDate(startDateTime);
             document.getElementById('end-time').value = formatTime(startDateTime);
+            updateDateDisplay('end-date');
             updateEndDateTime();
         }
     }
@@ -250,6 +280,9 @@ function updateEndDateTime() {
         // Update end date and time fields
         document.getElementById('end-date').value = formatDate(endDateTime);
         document.getElementById('end-time').value = formatTime(endDateTime);
+        
+        // Update date display
+        updateDateDisplay('end-date');
     }
 }
 
@@ -938,13 +971,15 @@ function selectMinute(index) {
     const startAddressFormatted = formatAddressForPopup(startPoint.address);
     const endAddressFormatted = formatAddressForPopup(endPoint.address);
     
-    startMarker.bindPopup(`<div style="text-align:center;"><b style="color:#27ae60;">Start</b><br>${startTimeStr}<br><span style="font-size:11px;color:#666;">${startAddressFormatted}</span></div>`, {
-        className: 'compact-popup',
-        closeButton: false,
+    // Use tooltips instead of popups so both can show at once
+    startMarker.bindTooltip(`<div style="text-align:center;"><b style="color:#27ae60;">Start</b> ${startTimeStr}<br><span style="font-size:11px;color:#666;">${startAddressFormatted}</span></div>`, {
+        permanent: true,
+        direction: 'top',
+        className: 'compact-tooltip',
         offset: [0, -5]
-    }).openPopup();
+    });
     
-    // Create end marker with popup (color based on status)
+    // Create end marker with tooltip (color based on status)
     endMarker = L.circleMarker([endPoint.latitude, endPoint.longitude], {
         radius: 8,
         fillColor: endMarkerColor,
@@ -954,9 +989,10 @@ function selectMinute(index) {
         fillOpacity: 0.9
     }).addTo(map);
     
-    endMarker.bindPopup(`<div style="text-align:center;"><b style="color:#e74c3c;">End</b><br>${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}:</span> <span style="font-size:11px;color:#666;">${endAddressFormatted}</span></div>`, {
-        className: 'compact-popup',
-        closeButton: false,
+    endMarker.bindTooltip(`<div style="text-align:center;"><b style="color:#e74c3c;">End</b> ${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}:</span> <span style="font-size:11px;color:#666;">${endAddressFormatted}</span></div>`, {
+        permanent: true,
+        direction: 'top',
+        className: 'compact-tooltip',
         offset: [0, -5]
     });
     
@@ -1010,4 +1046,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V13');
+console.log('V14');
