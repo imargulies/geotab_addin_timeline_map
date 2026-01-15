@@ -936,4 +936,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V4');
+console.log('V5');
