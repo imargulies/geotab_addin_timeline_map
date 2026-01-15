@@ -954,7 +954,7 @@ function selectMinute(index) {
         fillOpacity: 0.9
     }).addTo(map);
     
-    endMarker.bindPopup(`<b>End</b><br>${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}</span><br><span style="font-size:11px;color:#666;">${endAddressFormatted}</span>`, {
+    endMarker.bindPopup(`<b>End</b><br>${endTimeStr}<br><span style="color:${endMarkerColor};font-weight:bold;">${endStatus.text}:</span> <span style="font-size:11px;color:#666;">${endAddressFormatted}</span>`, {
         className: 'compact-popup',
         closeButton: false,
         offset: [0, -5]
@@ -1010,4 +1010,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V10');
+console.log('V11');
