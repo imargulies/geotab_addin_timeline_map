@@ -106,6 +106,7 @@ button:disabled {
     overflow: hidden;
     position: relative;
     z-index: 1;
+    min-height: 0;
 }
 
 #left-panel {
@@ -115,6 +116,8 @@ button:disabled {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 #timeline-header {
@@ -124,12 +127,14 @@ button:disabled {
     font-weight: 600;
     font-size: 14px;
     color: #2c3e50;
+    flex-shrink: 0;
 }
 
 #timeline-list {
     flex: 1;
     overflow-y: auto;
     background: white;
+    min-height: 0;
 }
 
 .timeline-item {
@@ -242,6 +247,7 @@ button:disabled {
 #right-panel {
     flex: 1;
     position: relative;
+    min-height: 0;
 }
 
 #map {
