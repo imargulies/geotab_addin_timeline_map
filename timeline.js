@@ -75,6 +75,11 @@ function initMap() {
         maxZoom: 19
     }).addTo(map);
 
+    // Fix for map not rendering properly in flex containers
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 100);
+
     vehicleMarker = L.circleMarker([0, 0], {
         radius: 10,
         fillColor: "#e74c3c",
@@ -931,4 +936,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V3');
+console.log('V4');
