@@ -465,7 +465,7 @@ async function loadTimelineData() {
             map.fitBounds(bounds);
         }
         
-        showNotification(`Loaded ${locationData.length} GPS points`, 'success');
+        showNotification(`Loaded ${locationData.length} GPS ${locationData.length === 1 ? 'point' : 'points'}`, 'success');
         
     } catch (error) {
         document.getElementById('loading').style.display = 'none';
@@ -931,4 +931,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V2');
+console.log('V3');
