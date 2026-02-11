@@ -159,7 +159,10 @@ function formatTime(date) {
 // Setup event listeners
 function setupEventListeners() {
     document.getElementById('load-data').addEventListener('click', loadTimelineData);
-    document.getElementById('download-report').addEventListener('click', downloadTimelineReport);
+    const downloadButton = document.getElementById('download-report');
+    if (downloadButton) {
+        downloadButton.addEventListener('click', downloadTimelineReport);
+    }
     
     // Auto-update end time when start date/time changes
     document.getElementById('start-date').addEventListener('change', function() {
@@ -200,35 +203,48 @@ function downloadTimelineReport() {
         const speedKmh = point.speed || 0;
         const status = getVehicleStatus(speedKmh);
 
-        return {
-            '#': index + 1,
-            Timestamp: timestamp.toLocaleString('en-US'),
-            Latitude: point.latitude,
-            Longitude: point.longitude,
-            Address: formatAddressWithoutCountry(point.address),
-            Zone: point.zoneName || '',
-            Speed: formatSpeed(speedKmh),
-            'Speed Unit': unitPreference === 'miles' ? 'mph' : 'km/h',
-            Status: status.text,
-            'No Change Duration (minutes)': point.noChangeDuration || '',
-            'Gap After (minutes)': point.gapAfter || ''
-        };
+        return [
+            index + 1,
+            timestamp.toLocaleString('en-US'),
+            point.latitude,
+            point.longitude,
+            formatAddressWithoutCountry(point.address),
+            point.zoneName || '',
+            formatSpeed(speedKmh),
+            unitPreference === 'miles' ? 'mph' : 'km/h',
+            status.text,
+            point.noChangeDuration || '',
+            point.gapAfter || ''
+        ];
     });
-
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Timeline Report');
 
     const metadata = [
         ['Vehicle', vehicleName],
         ['From', `${startDate} ${startTime}`],
         ['To', `${endDate} ${endTime}`],
         ['Points', String(locationData.length)],
-        []
+        [],
+        ['#', 'Timestamp', 'Latitude', 'Longitude', 'Address', 'Zone', 'Speed', 'Speed Unit', 'Status', 'No Change Duration (minutes)', 'Gap After (minutes)'],
+        ...rows
     ];
 
-    XLSX.utils.sheet_add_aoa(worksheet, metadata, { origin: 'A1' });
-    XLSX.utils.sheet_add_json(worksheet, rows, { origin: 'A6', skipHeader: false });
+    const worksheet = XLSX.utils.aoa_to_sheet(metadata);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Timeline Report');
+
+    worksheet['!cols'] = [
+        { wch: 6 },
+        { wch: 22 },
+        { wch: 13 },
+        { wch: 13 },
+        { wch: 44 },
+        { wch: 24 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 28 },
+        { wch: 18 }
+    ];
 
     const exportDate = new Date().toISOString().slice(0, 10);
     const safeVehicle = vehicleName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'vehicle';
