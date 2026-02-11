@@ -159,6 +159,7 @@ function formatTime(date) {
 // Setup event listeners
 function setupEventListeners() {
     document.getElementById('load-data').addEventListener('click', loadTimelineData);
+    document.getElementById('download-report').addEventListener('click', downloadTimelineReport);
     
     // Auto-update end time when start date/time changes
     document.getElementById('start-date').addEventListener('change', function() {
@@ -173,6 +174,68 @@ function setupEventListeners() {
         validateTimeRange();
     });
     document.getElementById('end-time').addEventListener('change', validateTimeRange);
+}
+
+// Download currently loaded timeline data as an Excel report
+function downloadTimelineReport() {
+    if (!locationData || locationData.length === 0) {
+        showNotification('No timeline results to export. Load timeline data first.', 'warning');
+        return;
+    }
+
+    if (typeof XLSX === 'undefined') {
+        showNotification('Excel export library is unavailable. Please refresh and try again.', 'error');
+        return;
+    }
+
+    const vehicleSelect = document.getElementById('vehicle-select');
+    const vehicleName = vehicleSelect.options[vehicleSelect.selectedIndex]?.text || 'Unknown Vehicle';
+    const startDate = document.getElementById('start-date').value;
+    const startTime = document.getElementById('start-time').value;
+    const endDate = document.getElementById('end-date').value;
+    const endTime = document.getElementById('end-time').value;
+
+    const rows = locationData.map((point, index) => {
+        const timestamp = new Date(point.dateTime);
+        const speedKmh = point.speed || 0;
+        const status = getVehicleStatus(speedKmh);
+
+        return {
+            '#': index + 1,
+            Timestamp: timestamp.toLocaleString('en-US'),
+            Latitude: point.latitude,
+            Longitude: point.longitude,
+            Address: formatAddressWithoutCountry(point.address),
+            Zone: point.zoneName || '',
+            Speed: formatSpeed(speedKmh),
+            'Speed Unit': unitPreference === 'miles' ? 'mph' : 'km/h',
+            Status: status.text,
+            'No Change Duration (minutes)': point.noChangeDuration || '',
+            'Gap After (minutes)': point.gapAfter || ''
+        };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Timeline Report');
+
+    const metadata = [
+        ['Vehicle', vehicleName],
+        ['From', `${startDate} ${startTime}`],
+        ['To', `${endDate} ${endTime}`],
+        ['Points', String(locationData.length)],
+        []
+    ];
+
+    XLSX.utils.sheet_add_aoa(worksheet, metadata, { origin: 'A1' });
+    XLSX.utils.sheet_add_json(worksheet, rows, { origin: 'A6', skipHeader: false });
+
+    const exportDate = new Date().toISOString().slice(0, 10);
+    const safeVehicle = vehicleName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'vehicle';
+    const fileName = `timeline_report_${safeVehicle}_${exportDate}.xlsx`;
+
+    XLSX.writeFile(workbook, fileName);
+    showNotification(`Excel report downloaded (${locationData.length} rows).`, 'success');
 }
 
 // Show notification to user
