@@ -213,6 +213,7 @@ function downloadTimelineReport() {
             formatSpeed(speedKmh),
             unitPreference === 'miles' ? 'mph' : 'km/h',
             status.text,
+            status.class,
             point.noChangeDuration || '',
             point.gapAfter || ''
         ];
@@ -224,7 +225,7 @@ function downloadTimelineReport() {
         ['To', `${endDate} ${endTime}`],
         ['Points', String(locationData.length)],
         [],
-        ['#', 'Timestamp', 'Latitude', 'Longitude', 'Address', 'Zone', 'Speed', 'Speed Unit', 'Status', 'No Change Duration (minutes)', 'Gap After (minutes)'],
+        ['#', 'Timestamp', 'Latitude', 'Longitude', 'Address', 'Zone', 'Speed', 'Speed Unit', 'Driving Status', 'Movement Type', 'No Change Duration (minutes)', 'Gap After (minutes)'],
         ...rows
     ];
 
@@ -241,7 +242,8 @@ function downloadTimelineReport() {
         { wch: 24 },
         { wch: 12 },
         { wch: 12 },
-        { wch: 12 },
+        { wch: 16 },
+        { wch: 14 },
         { wch: 28 },
         { wch: 18 }
     ];
