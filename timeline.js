@@ -952,21 +952,28 @@ function addArrowsToPath(coordinates) {
     if (arrowDecorator) {
         map.removeLayer(arrowDecorator);
     }
-    
-    // Create arrow decorator with arrows along the path
+
+    // Need at least 2 points to show direction arrows
+    if (!coordinates || coordinates.length < 2) {
+        return;
+    }
+
+    // Create arrow decorator with filled, professional arrows
     arrowDecorator = L.polylineDecorator(coordinates, {
         patterns: [
             {
-                offset: '10%',
-                repeat: '20%',
+                offset: 30,
+                repeat: 80,
                 symbol: L.Symbol.arrowHead({
-                    pixelSize: 12,
-                    polygon: false,
+                    pixelSize: 10,
+                    polygon: true,
                     pathOptions: {
                         stroke: true,
-                        weight: 2,
-                        color: '#2c3e50',
-                        fillOpacity: 0
+                        weight: 1,
+                        color: '#1a5276',
+                        fillColor: '#ffffff',
+                        fillOpacity: 0.95,
+                        opacity: 1
                     }
                 })
             }
@@ -1097,41 +1104,80 @@ function selectMinute(index) {
         map.removeLayer(vehicleMarker);
     }
 
-    // Show trail for THIS SEGMENT - ROAD SNAPPING VERSION using OSRM
+    // Show trail for THIS SEGMENT - ROAD SNAPPING using OSRM match endpoint
     const trailPoints = locationData.slice(segmentStart, segmentEnd + 1)
         .map(p => [p.latitude, p.longitude]);
-    
-    // Build routing URL for OSRM (Open Source Routing Machine)
-    const coordinates = trailPoints.map(p => `${p[1]},${p[0]}`).join(';');
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
-    
-    // Fetch route from OSRM
-    fetch(osrmUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (data.code === 'Ok' && data.routes && data.routes[0]) {
-                // Use the road-snapped route
-                let routeCoordinates = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                
-                // Force the route to start and end at EXACT GPS points
-                routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
-                routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
-                
-                pathPolyline.setLatLngs(routeCoordinates).addTo(map);
-                
-                // Add directional arrows to the path
-                addArrowsToPath(routeCoordinates);
-            } else {
-                // Fallback to straight line if routing fails
-                pathPolyline.setLatLngs(trailPoints).addTo(map);
-                addArrowsToPath(trailPoints);
-            }
-        })
-        .catch(error => {
-            // Fallback to straight line on error
-            pathPolyline.setLatLngs(trailPoints).addTo(map);
-            addArrowsToPath(trailPoints);
-        });
+
+    // If only 1 point (start === end), just show marker without path
+    if (trailPoints.length < 2) {
+        if (pathPolyline) {
+            map.removeLayer(pathPolyline);
+        }
+        if (arrowDecorator) {
+            map.removeLayer(arrowDecorator);
+        }
+    } else {
+        // Use OSRM match endpoint for GPS trace snapping (better than route for GPS data)
+        const coordinates = trailPoints.map(p => `${p[1]},${p[0]}`).join(';');
+        const radiuses = trailPoints.map(() => '25').join(';');
+        const matchUrl = `https://router.project-osrm.org/match/v1/driving/${coordinates}?overview=full&geometries=geojson&radiuses=${radiuses}&gaps=ignore`;
+        const routeUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+
+        fetch(matchUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 'Ok' && data.matchings && data.matchings[0]) {
+                    // Use the road-matched trace
+                    let routeCoordinates = data.matchings[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+                    // Force the route to start and end at EXACT GPS points
+                    routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
+                    routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
+
+                    pathPolyline.setLatLngs(routeCoordinates).addTo(map);
+                    addArrowsToPath(routeCoordinates);
+                } else {
+                    // Match failed, fall back to route endpoint
+                    return fetch(routeUrl)
+                        .then(resp => resp.json())
+                        .then(routeData => {
+                            if (routeData.code === 'Ok' && routeData.routes && routeData.routes[0]) {
+                                let routeCoordinates = routeData.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                                routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
+                                routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
+
+                                pathPolyline.setLatLngs(routeCoordinates).addTo(map);
+                                addArrowsToPath(routeCoordinates);
+                            } else {
+                                pathPolyline.setLatLngs(trailPoints).addTo(map);
+                                addArrowsToPath(trailPoints);
+                            }
+                        });
+                }
+            })
+            .catch(error => {
+                // Final fallback: try route endpoint, then straight line
+                fetch(routeUrl)
+                    .then(resp => resp.json())
+                    .then(routeData => {
+                        if (routeData.code === 'Ok' && routeData.routes && routeData.routes[0]) {
+                            let routeCoordinates = routeData.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                            routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
+                            routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
+
+                            pathPolyline.setLatLngs(routeCoordinates).addTo(map);
+                            addArrowsToPath(routeCoordinates);
+                        } else {
+                            pathPolyline.setLatLngs(trailPoints).addTo(map);
+                            addArrowsToPath(trailPoints);
+                        }
+                    })
+                    .catch(() => {
+                        pathPolyline.setLatLngs(trailPoints).addTo(map);
+                        addArrowsToPath(trailPoints);
+                    });
+            });
+    }
 
     // Center map to show both start and end markers
     const bounds = L.latLngBounds([startPoint.latitude, startPoint.longitude], [endPoint.latitude, endPoint.longitude]);
@@ -1142,4 +1188,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V20');
+console.log('V21');
