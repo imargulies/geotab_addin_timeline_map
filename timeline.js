@@ -1104,79 +1104,74 @@ function selectMinute(index) {
         map.removeLayer(vehicleMarker);
     }
 
-    // Show trail for THIS SEGMENT - ROAD SNAPPING using OSRM match endpoint
+    // Show trail for THIS SEGMENT - ROAD SNAPPING using OSRM
     const trailPoints = locationData.slice(segmentStart, segmentEnd + 1)
         .map(p => [p.latitude, p.longitude]);
 
-    // If only 1 point (start === end), just show marker without path
-    if (trailPoints.length < 2) {
-        if (pathPolyline) {
-            map.removeLayer(pathPolyline);
+    // Helper: draw path and arrows on map
+    function drawPath(coords) {
+        pathPolyline.setLatLngs(coords).addTo(map);
+        addArrowsToPath(coords);
+    }
+
+    // Helper: snap exact GPS start/end onto OSRM coordinates, with validation
+    function applyExactEndpoints(routeCoords) {
+        if (routeCoords.length < 2) {
+            // OSRM returned too few points — not usable, signal failure
+            return null;
         }
-        if (arrowDecorator) {
-            map.removeLayer(arrowDecorator);
-        }
-    } else {
-        // Use OSRM match endpoint for GPS trace snapping (better than route for GPS data)
-        const coordinates = trailPoints.map(p => `${p[1]},${p[0]}`).join(';');
+        routeCoords[0] = [startPoint.latitude, startPoint.longitude];
+        routeCoords[routeCoords.length - 1] = [endPoint.latitude, endPoint.longitude];
+        return routeCoords;
+    }
+
+    // Helper: try OSRM route endpoint, resolve to coords or null
+    function tryRoute(coordinates) {
+        const routeUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+        return fetch(routeUrl)
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.code === 'Ok' && data.routes && data.routes[0]) {
+                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    return applyExactEndpoints(coords);
+                }
+                return null;
+            })
+            .catch(() => null);
+    }
+
+    // Helper: try OSRM match endpoint, resolve to coords or null
+    function tryMatch(coordinates) {
         const radiuses = trailPoints.map(() => '25').join(';');
         const matchUrl = `https://router.project-osrm.org/match/v1/driving/${coordinates}?overview=full&geometries=geojson&radiuses=${radiuses}&gaps=ignore`;
-        const routeUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
-
-        fetch(matchUrl)
-            .then(response => response.json())
+        return fetch(matchUrl)
+            .then(resp => resp.json())
             .then(data => {
                 if (data.code === 'Ok' && data.matchings && data.matchings[0]) {
-                    // Use the road-matched trace
-                    let routeCoordinates = data.matchings[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-
-                    // Force the route to start and end at EXACT GPS points
-                    routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
-                    routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
-
-                    pathPolyline.setLatLngs(routeCoordinates).addTo(map);
-                    addArrowsToPath(routeCoordinates);
-                } else {
-                    // Match failed, fall back to route endpoint
-                    return fetch(routeUrl)
-                        .then(resp => resp.json())
-                        .then(routeData => {
-                            if (routeData.code === 'Ok' && routeData.routes && routeData.routes[0]) {
-                                let routeCoordinates = routeData.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                                routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
-                                routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
-
-                                pathPolyline.setLatLngs(routeCoordinates).addTo(map);
-                                addArrowsToPath(routeCoordinates);
-                            } else {
-                                pathPolyline.setLatLngs(trailPoints).addTo(map);
-                                addArrowsToPath(trailPoints);
-                            }
-                        });
+                    const coords = data.matchings[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    return applyExactEndpoints(coords);
                 }
+                return null;
             })
-            .catch(error => {
-                // Final fallback: try route endpoint, then straight line
-                fetch(routeUrl)
-                    .then(resp => resp.json())
-                    .then(routeData => {
-                        if (routeData.code === 'Ok' && routeData.routes && routeData.routes[0]) {
-                            let routeCoordinates = routeData.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                            routeCoordinates[0] = [startPoint.latitude, startPoint.longitude];
-                            routeCoordinates[routeCoordinates.length - 1] = [endPoint.latitude, endPoint.longitude];
+            .catch(() => null);
+    }
 
-                            pathPolyline.setLatLngs(routeCoordinates).addTo(map);
-                            addArrowsToPath(routeCoordinates);
-                        } else {
-                            pathPolyline.setLatLngs(trailPoints).addTo(map);
-                            addArrowsToPath(trailPoints);
-                        }
-                    })
-                    .catch(() => {
-                        pathPolyline.setLatLngs(trailPoints).addTo(map);
-                        addArrowsToPath(trailPoints);
-                    });
-            });
+    // If only 1 point (start === end), just show marker without path
+    if (trailPoints.length < 2) {
+        if (pathPolyline) map.removeLayer(pathPolyline);
+        if (arrowDecorator) map.removeLayer(arrowDecorator);
+    } else {
+        const osrmCoords = trailPoints.map(p => `${p[1]},${p[0]}`).join(';');
+
+        // For 2-point segments (1-min interval): use /route (point-to-point directions)
+        // For 3+ point segments: try /match first (GPS trace matching), then /route
+        const snapPromise = trailPoints.length === 2
+            ? tryRoute(osrmCoords)
+            : tryMatch(osrmCoords).then(result => result || tryRoute(osrmCoords));
+
+        snapPromise.then(snappedCoords => {
+            drawPath(snappedCoords || trailPoints);
+        });
     }
 
     // Center map to show both start and end markers
@@ -1188,4 +1183,4 @@ function selectMinute(index) {
 }
 
 // Version log
-console.log('V21');
+console.log('V22');
